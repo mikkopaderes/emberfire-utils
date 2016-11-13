@@ -399,7 +399,7 @@ export default Service.extend({
 
         if (!query.records.findBy('id', key)) {
           let tempRecordIndex;
-          let tempRecord = {id: key, isLoaded: false};
+          let tempRecord = {id: key, isLoading: true};
 
           if (query.hasOwnProperty('limitToFirst')) {
             query.records.pushObject(tempRecord);
