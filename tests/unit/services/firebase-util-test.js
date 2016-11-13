@@ -1,4 +1,5 @@
 import { moduleFor, test } from 'ember-qunit';
+import { assign } from 'ember-platform';
 import RSVP from 'rsvp';
 import wait from 'ember-test-helpers/wait';
 
@@ -36,7 +37,7 @@ moduleFor('service:firebase-util', 'Unit | Service | firebase util', {
 function findRecordStub(model, id) {
   let record = {id: id};
 
-  return stubPromise(true, Object.assign(record, FIXTURE_DATA.users[id]));
+  return stubPromise(true, assign(record, FIXTURE_DATA.users[id]));
 }
 
 test('should return the download url when successfully uploading a blob', function(assert) {
