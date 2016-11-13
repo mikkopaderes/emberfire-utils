@@ -138,6 +138,27 @@ test('should return an empty object when finding a record that does not exist', 
   });
 });
 
+test('should pick up changes on find record', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const EXPECTED = {id: 'foo', photoURL: 'foobar.jpg', username: 'bar'};
+  let service = this.subject({firebase: this.ref});
+
+  // Act
+  let actual;
+
+  service.findRecord('id', 'users/foo').then(record => {
+    actual = record;
+
+    service.update({'users/foo/photoURL': 'foobar.jpg'});
+  });
+
+  // Assert
+  return wait().then(() => assert.deepEqual(actual, EXPECTED));
+});
+
+// TODO: Find a good way to test this
 // test('should reject when finding record fails', function(assert) {
 //   assert.expect(1);
 
@@ -225,6 +246,7 @@ test('should return an empty array when finding all records that does not exist'
   });
 });
 
+// TODO: Find a good way to test this
 // test('should reject when finding all records fails', function(assert) {
 //   assert.expect(1);
 
@@ -275,11 +297,7 @@ test('should query equal to value', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [{
-    id: 'foo',
-    photoURL: 'foo.jpg',
-    username: 'bar'
-  }];
+  const EXPECTED = [{id: 'foo', photoURL: 'foo.jpg', username: 'bar'}];
   let service = this.subject({
     store: {findRecord: findRecordStub},
     firebase: this.ref
@@ -298,11 +316,7 @@ test('should query start at and end at value', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [{
-    id: 'foo',
-    photoURL: 'foo.jpg',
-    username: 'bar'
-  }];
+  const EXPECTED = [{id: 'foo', photoURL: 'foo.jpg', username: 'bar'}];
   let service = this.subject({
     store: {findRecord: findRecordStub},
     firebase: this.ref
@@ -322,11 +336,7 @@ test('should query limit to first records', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [{
-    id: 'foo',
-    photoURL: 'foo.jpg',
-    username: 'bar'
-  }];
+  const EXPECTED = [{id: 'foo', photoURL: 'foo.jpg', username: 'bar'}];
   let service = this.subject({
     store: {findRecord: findRecordStub},
     firebase: this.ref
@@ -345,11 +355,7 @@ test('should query limit to last records', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [{
-    id: 'hello',
-    photoURL: 'hello.jpg',
-    username: 'world'
-  }];
+  const EXPECTED = [{id: 'hello', photoURL: 'hello.jpg', username: 'world'}];
   let service = this.subject({
     store: {findRecord: findRecordStub},
     firebase: this.ref
@@ -362,6 +368,31 @@ test('should query limit to last records', function(assert) {
     // Assert
     assert.deepEqual(actual, EXPECTED);
   });
+});
+
+test('should pick up changes on query', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const EXPECTED = [];
+  let service = this.subject({
+    store: {findRecord: findRecordStub},
+    firebase: this.ref
+  });
+
+  // Act
+  let actual;
+
+  service.query('user', 'id', 'users', {
+    equalTo: 'foo'
+  }).then(record => {
+    actual = record;
+
+    service.update({'users/foo': null});
+  });
+
+  // Assert
+  return wait().then(() => assert.deepEqual(actual, EXPECTED));
 });
 
 test('should return cached records on query when available', function(assert) {
