@@ -1,5 +1,5 @@
 /**
- * @module cenchat-web
+ * @module emberfire-utils
  */
 import { A } from 'ember-array/utils';
 import { assign } from 'ember-platform';

@@ -1,5 +1,5 @@
 /**
- * @module cenchat-web
+ * @module emberfire-utils
  */
 import Ember from 'ember';
 import computed from 'ember-computed';
