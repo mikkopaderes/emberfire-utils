@@ -58,14 +58,30 @@ For the examples below, assume we have the following Firebase data:
     "photoURL" : "hello.jpg",
     "username" : "world"
   }
+},
+"userFeeds": {
+  "foo" : {
+    "post_a" : true
+  },
+  "hello" : {
+    "post_a" : true
+  }
+},
+"posts" : {
+  "post_a" : {
+    "title" : "Title",
+    "message" : "Message"
+  }
 }
 ```
+
+Also, you'll notice the `firebase-util` service used across the examples. This service is automatically 
+injected in all your routes, controllers, and models.
 
 #### Retrieving a single record
 
 To retrieve a single record, call `findRecord()` method on the `firebase-util` service. This will return a 
-promise that fulfills with the requested record. Unlike `store.findRecord`, this will resolve in a plain 
-object.
+promise that fulfills with the requested record in a plain object format.
 
 ```javascript
 this.get('firebaseUtil').findRecord('referenceId', 'users/foo').then(record => {
@@ -81,8 +97,8 @@ the instance to call `findRecord()` more than once on the same reference ID.
 
 #### Retrieving multiple records
 
-To retrieve multiple records, call `findAll()` method on the `firebase-util` service. Similar to `findRecord`, 
-this will return a promise that fulfills with the requested records; each one in a plain object format.
+To retrieve multiple records, call `findAll()` method on the `firebase-util` service. This will return a 
+promise that fulfills with the requested records; each one in a plain object format.
 
 ```javascript
 this.get('firebaseUtil').findAll('users').then(records => {
@@ -136,14 +152,27 @@ record = {
 };
 ```
 
+### Checking if record exists
+
+To check if a record exists, call `isRecordExisting()` method on the `firebase-util` service. This returns a 
+promise that fulfills to `true` if the record exists. Otherwise, `false`.
+
+```javascript
+this.get('firebaseUtil').isRecordExisting('users/foo').then(result => {
+  // Do something with `result`
+}).catch(error => {
+  // Do something with `error`
+});
+```
+
 ### Querying for multiple records
 
-To query for multiple records, call `query()` method on the `firebase-util` service. This also returns a 
-promise that fulfills to the requested records. But unlike the 2 methods above, this serializes the records 
+To query for multiple records, call `query()` method on the `firebase-util` service. This returns a promise 
+that fulfills to the requested records. But unlike `findRecord()` and `findAll()`, this serializes the records 
 to a specified model.
 
 ```javascript
-this.get('firebaseUtil').query('user', 'referenceId', 'users', {limitToLast: 1}).then(records => {
+this.get('firebaseUtil').query('post', 'referenceId', 'userFeeds/foo', {limitToLast: 1}).then(records => {
   // Do something with `records`
 }).catch(error => {
   // Do something with `error
