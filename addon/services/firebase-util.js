@@ -7,6 +7,7 @@ import { typeOf } from 'ember-utils';
 import RSVP from 'rsvp';
 import Service from 'ember-service';
 import service from 'ember-service/inject';
+import set from 'ember-metal/set';
 import run from 'ember-runloop';
 
 /**
@@ -143,7 +144,8 @@ export default Service.extend({
 
         ref.on('value', snapshot => {
           if (snapshot.exists()) {
-            assign(query.record, this._serialize(snapshot.key, snapshot.val()));
+            this._assignObject(
+                query.record, this._serialize(snapshot.key, snapshot.val()));
             run(null, resolve, query.record);
           } else {
             this._nullifyObject(query.record);
@@ -351,6 +353,29 @@ export default Service.extend({
   },
 
   /**
+   * Polyfill for `Object.assign`.
+   *
+   * `Object.assign` doesn't work consistently with POJO that mutates  
+   * into an `Ember.Object`.
+   *
+   * In production, using `firebaseUtil.findRecord()` inside an 
+   * `RSVP.hash()` for a route's `model()` seems to mutate it for 
+   * whatever reason.
+   *
+   * TODO: Figure out a way to replicate the mutation in unit tests. 
+   *
+   * @method _assignObject
+   * @param {Object} objectToUpdate Object to update
+   * @param {Object} objectToMerge Object to merge
+   * @private
+   */
+  _assignObject(objectToUpdate, objectToMerge) {
+    for (let key in objectToMerge) {
+      set(objectToUpdate, key, objectToMerge[key]);
+    }
+  },
+
+  /**
    * Set all the object key's value to null
    *
    * @method _nullifyObject
@@ -359,7 +384,7 @@ export default Service.extend({
    */
   _nullifyObject(object) {
     for (let key in object) {
-      object[key] = null;
+      set(object, key, null);
     }
   },
 
