@@ -1,6 +1,6 @@
 {
   "name": "emberfire-utils",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Useful utilities on top of Emberfire",
   "directories": {
     "doc": "doc",
@@ -39,6 +39,7 @@
     "ember-resolver": "^2.0.3",
     "ember-sinon": "0.5.1",
     "ember-welcome-page": "^1.0.1",
+    "emberfire": "2.0.5",
     "loader.js": "^4.0.1"
   },
   "keywords": [
@@ -47,8 +48,7 @@
     "firebase"
   ],
   "dependencies": {
-    "ember-cli-babel": "^5.1.6",
-    "emberfire": "2.0.4"
+    "ember-cli-babel": "^5.1.6"
   },
   "ember-addon": {
     "configPath": "tests/dummy/config"
