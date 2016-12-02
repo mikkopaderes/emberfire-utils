@@ -1,6 +1,14 @@
-# Emberfire Utilities
+# EmberFire Utilities
 
-This addon provides some useful utilities on top of [Emberfire](https://github.com/firebase/emberfire).
+This addon provides some useful utilities on top of [EmberFire](https://github.com/firebase/emberfire).
+
+## Installation
+
+```bash
+ember install emberfire-utils
+```
+
+> Your app needs to have EmberFire installed for this addon to work.
 
 ## Features
 
@@ -10,6 +18,9 @@ This addon provides some useful utilities on top of [Emberfire](https://github.c
 * [`hasLimited` model relationship](#haslimited-relationship)
 
 ## Usage
+
+> You'll notice the `firebase-util` service that's used across the examples below. This service is automatically 
+> injected in all your routes, controllers, and models.
 
 ### Multi-path updates
 
@@ -83,9 +94,6 @@ For the examples below, assume we have the following Firebase data:
   }
 }
 ```
-
-Also, you'll notice the `firebase-util` service used across the examples. This service is automatically 
-injected in all your routes, controllers, and models.
 
 #### Retrieving a single record
 
@@ -189,7 +197,7 @@ this.get('firebaseUtil').query('post', 'referenceId', 'userFeeds/foo', {limitToL
 ```
 
 The first param is the model name and the fourth param are the Firebase filters which uses the same format as 
-the one in [Emberfire](https://github.com/firebase/emberfire/blob/master/docs/guide/querying-data.md).
+the one in [EmberFire](https://github.com/firebase/emberfire/blob/master/docs/guide/querying-data.md).
 
 
 #### Loading more records in your queries for infinite scrolling
@@ -241,7 +249,7 @@ This addon currently supports Ember CLI 2.8.0 that comes with Ember.js 2.8-LTS.
 
 > I'm planning to support only the latest [Ember CLI](https://ember-cli.com/) that comes with the latest LTS 
 > version of Ember.js. No other tests will be made for other versions. In addition, this addon's dependency of 
-> Emberfire would be of the latest version that's compatible with the Ember CLI mentioned earlier.
+> EmberFire would be of the latest version that's compatible with the Ember CLI mentioned earlier.
 
 ## Contributing
 
