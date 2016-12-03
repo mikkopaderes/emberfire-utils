@@ -226,6 +226,7 @@ To solve those 2 problems above, use `hasLimited()` relationship. It has the sam
 `firebaseUtil.query()` and it also works with infinite scrolling through `firebaseUtil.next()`.
 
 ```javascript
+// app/models/user
 import Model from 'ember-data/model';
 import attr from 'ember-data/attr';
 
@@ -234,7 +235,7 @@ import hasLimited from 'emberfire-utils/utils/has-limited';
 export default Model.extend({
   photoURL: attr('string'),
   username: attr('string'),
-  posts: hasLimited('post', '$id_posts', 'posts/$id', {limitToFirst: 20})
+  posts: hasLimited('post', '$id_posts', 'userFeeds/$id', {limitToFirst: 20})
 });
 
 ```
