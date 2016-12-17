@@ -40,6 +40,34 @@ function findRecordStub(model, id) {
   return stubPromise(true, assign(record, FIXTURE_DATA.users[id]));
 }
 
+test('should upload file', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const FILE = new Blob();
+  const METADATA = {contentType: 'image/jpeg'};
+  let stub = sinon.stub().returns({
+    snapshot: {downloadURL: 'foo.jpg'},
+
+    on(stateChanged, callbackState, callbackError, callbackSuccess) {
+      callbackSuccess();
+    }
+  });
+  let service = this.subject({
+    firebaseApp: {
+      storage: sinon.stub().returns({
+        ref: sinon.stub().returns({put: stub})
+      })
+    }
+  });
+
+  // Act
+  service.uploadFile('images/foo', FILE, METADATA).then(() => {
+    // Assert
+    assert.ok(stub.calledWith(FILE, METADATA));
+  });
+});
+
 test('should return the download url when successfully uploading a blob', function(assert) {
   assert.expect(1);
 
@@ -62,10 +90,39 @@ test('should return the download url when successfully uploading a blob', functi
   });
 
   // Act
-  service.upload({name: 'foo.jpg'}, 'images/foo').then(actual => {
+  service.uploadFile('images/foo', new Blob()).then(actual => {
     // Assert
     assert.equal(actual, EXPECTED);
   });
+});
+
+test('should call state change callback when available', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const SNAPSHOT = {state: 'progress'};
+  let spy = sinon.spy();
+  let service = this.subject({
+    firebaseApp: {
+      storage: sinon.stub().returns({
+        ref: sinon.stub().returns({
+          put: sinon.stub().returns({
+            snapshot: SNAPSHOT,
+
+            on(stateChanged, callbackState) {
+              callbackState(this.snapshot);
+            }
+          })
+        })
+      })
+    }
+  });
+
+  // Act
+  service.uploadFile('images/foo', new Blob(), {}, spy);
+
+  // Assert
+  assert.ok(spy.calledWith(SNAPSHOT));
 });
 
 test('should reject promise when uploading a blob is unsuccessful', function(assert) {
@@ -89,8 +146,48 @@ test('should reject promise when uploading a blob is unsuccessful', function(ass
   });
 
   // Act
-  service.upload(new Blob(), 'images/foo').catch(() => {
+  service.uploadFile('images/foo', new Blob()).catch(() => {
     // Assert
+    assert.ok(true);
+  });
+});
+
+test('should delete a file', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  let service = this.subject({
+    firebaseApp: {
+      storage: sinon.stub().returns({
+        refFromURL: sinon.stub().returns({
+          delete: sinon.stub().returns(stubPromise(true))
+        })
+      })
+    }
+  });
+
+  // Act
+  service.deleteFile('images/foo.jpg').then(() => {
+    assert.ok(true);
+  });
+});
+
+test('should reject promise when deleting a file fails', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  let service = this.subject({
+    firebaseApp: {
+      storage: sinon.stub().returns({
+        refFromURL: sinon.stub().returns({
+          delete: sinon.stub().returns(stubPromise(false))
+        })
+      })
+    }
+  });
+
+  // Act
+  service.deleteFile('images/foo.jpg').catch(() => {
     assert.ok(true);
   });
 });

@@ -82,19 +82,43 @@ export default Service.extend({
   /**
    * Uploads a file to Firebase storage
    *
-   * @method upload
-   * @param {Blob} file File to upload
+   * @method uploadFile
    * @param {String} path Storage path
+   * @param {Blob} file File to upload
+   * @param {Object} [metadata={}] File metadata
+   * @param {Function} [onStateChange=() => {}]
+   *    Function to call when state changes
    * @return {Promise|String} Download URL
    */
-  upload(file, path) {
+  uploadFile(path, file, metadata = {}, onStateChange = () => {}) {
     return new RSVP.Promise((resolve, reject) => {
-      let uploadTask = this.get('firebaseApp').storage().ref(path).put(file);
+      let uploadTask = this.get('firebaseApp').storage().ref(path).put(
+          file,
+          metadata);
 
-      uploadTask.on('state_changed', () => {}, error => {
+      uploadTask.on('state_changed', snapshot => {
+        run(() => onStateChange(snapshot));
+      }, error => {
         run(null, reject, error);
       }, () => {
         run(null, resolve, uploadTask.snapshot.downloadURL);
+      });
+    });
+  },
+
+  /**
+   * Delete a file from Firebase storage
+   *
+   * @method deleteFile
+   * @param {String} url File HTTPS URL
+   * @return {Promise} Resolves when deleted.
+   */
+  deleteFile(url) {
+    return new RSVP.Promise((resolve, reject) => {
+      this.get('firebaseApp').storage().refFromURL(url).delete().then(() => {
+        run(null, resolve, null);
+      }).catch(error => {
+        run(null, reject, error);
       });
     });
   },
