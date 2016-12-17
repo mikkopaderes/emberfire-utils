@@ -76,12 +76,15 @@ this.get('firebaseUtil').uploadFile('images/foo.jpg', file, metadata, onStateCha
 To delete files in Firebase storage, call `deleteFile()` method on the `firebase-util` service.
 
 ```javascript
-this.get('firebaseUtil').deleteFile('https://firebasestorage.googleapis.com/b/bucket/o/images%20stars.jpg').then(() => {
+this.get('firebaseUtil').deleteFile(url).then(() => {
   // Do something on success
 }).catch(error => {
   // Do something with `error`
 });
 ```
+
+> `url` should be the HTTPS URL representation of the file.
+> e.g. https://firebasestorage.googleapis.com/b/bucket/o/images%20stars.jpg
 
 ### Flexible queries
 
