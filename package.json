@@ -1,6 +1,6 @@
 {
   "name": "emberfire-utils",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "description": "Useful utilities on top of Emberfire",
   "directories": {
     "doc": "doc",
