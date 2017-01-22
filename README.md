@@ -210,15 +210,18 @@ this.get('firebaseUtil').isRecordExisting('users/foo').then(result => {
 ### Querying for multiple records
 
 To query for multiple records, call `query()` method on the `firebase-util` service. This returns a promise 
-that fulfills to the requested records. But unlike `findRecord()` and `findAll()`, this serializes the records 
-to a specified model.
+that fulfills to an empty array. This array will be mutated for every `child_added` and `child_removed` events. 
+
+With the constant mutation of your queried records depending on your filters and usage of  `next()` for 
+infinite scrolling, you shouldn't be doing any post processing to the records returned by the promise since 
+you'll never really get an accurate representation of your data.
+
+The benefit of `query()` returning a promise are for your loading states in your templates/route.
+
+Unlike `findRecord()` and `findAll()`, this serializes the records to a specified model.
 
 ```javascript
-this.get('firebaseUtil').query('post', 'referenceId', 'userFeeds/foo', {limitToLast: 1}).then(records => {
-  // Do something with `records`
-}).catch(error => {
-  // Do something with `error
-});
+this.get('firebaseUtil').query('post', 'referenceId', 'userFeeds/foo', {limitToLast: 1});
 ```
 
 The first param is the model name and the fourth param are the Firebase filters which uses the same format as 
