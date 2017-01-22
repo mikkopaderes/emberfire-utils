@@ -244,32 +244,19 @@ export default Service.extend({
           ref: ref,
           path: path,
           modelName: modelName,
+          willUnshiftRecord: false,
           records: A()
         };
         option.orderBy = option.hasOwnProperty('orderBy') ?
             option.orderBy : 'id';
         assign(query, option);
         this.set(`_queryCache.${listenerId}`, query);
-
         this._setQuerySortingAndFiltering(query);
 
-        query.ref.once('value').then(snapshot => {
+        query.ref.once('value').then(() => {
           run(() => {
-            if (snapshot.exists()) {
-              let requests = Object.keys(snapshot.val()).map(
-                  key => this.get('store').findRecord(query.modelName, key));
-
-              RSVP.all(requests).then(records => {
-                run(() => {
-                  records.forEach(record => query.records.pushObject(record));
-                  this._setQueryListeners(query);
-                  run(null, resolve, query.records);
-                });
-              });
-            } else {
-              this._setQueryListeners(query);
-              run(null, resolve, query.records);
-            }
+            this._setQueryListeners(query);
+            run(null, resolve, query.records);
           });
         }).catch(error => {
           run(null, reject, error);
@@ -299,6 +286,7 @@ export default Service.extend({
 
     if (query.hasOwnProperty('limitToLast')) {
       query.limitToLast += numberOfRecords;
+      query.willUnshiftRecord = true;
     }
 
     this._setQuerySortingAndFiltering(query);
@@ -447,20 +435,20 @@ export default Service.extend({
         let key = snapshot.key;
 
         if (!query.records.findBy('id', key)) {
-          let tempRecordIndex;
+          let recordIndex;
           let tempRecord = {id: key, isLoading: true};
 
-          if (query.hasOwnProperty('limitToFirst')) {
-            query.records.pushObject(tempRecord);
-            tempRecordIndex = query.records.get('length');
-          } else {
+          if (query.willUnshiftRecord) {
             query.records.unshiftObject(tempRecord);
-            tempRecordIndex = 0;
+            recordIndex = 1;
+          } else {
+            query.records.pushObject(tempRecord);
+            recordIndex = query.records.get('length');
           }
 
           this.get('store').findRecord(query.modelName, key).then(record => {
             run(() => {
-              query.records.insertAt(tempRecordIndex, record);
+              query.records.insertAt(recordIndex, record);
               query.records.removeObject(tempRecord);
             });
           });
