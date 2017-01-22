@@ -1,13 +1,9 @@
-/**
- * @module emberfire-utils
- */
+/** @module emberfire-utils */
 
 /**
  * Firebase util initializer
  *
- * @method initializer
- * @param {Object} application Application instance
- * @for Initializers
+ * @param {Object} application
  */
 export function initialize(application) {
   application.inject('route', 'firebaseUtil', 'service:firebase-util');
@@ -17,5 +13,5 @@ export function initialize(application) {
 
 export default {
   name: 'firebase-util',
-  initialize
+  initialize,
 };
