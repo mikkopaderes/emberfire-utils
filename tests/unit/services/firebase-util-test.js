@@ -571,15 +571,13 @@ test('should request for the next limitToFirst records', function(assert) {
   service.query('user', 'id', 'users', {
     limitToFirst: 1,
   }).then(() => {
-    service.next('id', 1);
-  });
-
-  return wait().then(() => {
-    service.query('user', 'id', 'users', {
-      limitToFirst: 1,
-    }).then((actual) => {
-      // Assert
-      assert.deepEqual(actual, EXPECTED);
+    service.next('id', 1).then(() => {
+      service.query('user', 'id', 'users', {
+        limitToFirst: 1,
+      }).then((actual) => {
+        // Assert
+        assert.deepEqual(actual, EXPECTED);
+      });
     });
   });
 });
@@ -606,16 +604,14 @@ test('should request for the next limitToLast records', function(assert) {
   service.query('user', 'id', 'users', {
     limitToLast: 1,
   }).then(() => {
-    service.next('id', 1);
-  });
-
-  return wait().then(() => {
-    service.query('user', 'id', 'users', {
-      limitToLast: 1,
-    }).then((result) => {
-      RSVP.all(result).then((actual) => {
-        // Assert
-        assert.deepEqual(actual, EXPECTED);
+    service.next('id', 1).then(() => {
+      service.query('user', 'id', 'users', {
+        limitToLast: 1,
+      }).then((result) => {
+        RSVP.all(result).then((actual) => {
+          // Assert
+          assert.deepEqual(actual, EXPECTED);
+        });
       });
     });
   });

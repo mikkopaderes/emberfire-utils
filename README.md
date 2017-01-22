@@ -237,8 +237,8 @@ this.get('firebaseUtil').next('referenceId', 10);
 ```
 
 We used the `referenceId` as an easy way to know which listener should load the next 10 records. Records would 
-simply be pushed to the query result and will reflect to all variables and templates that uses it. Thus, 
-`next()` doesn't return a promise.
+simply be pushed to the query result and will reflect to all variables and templates that uses it. This returns 
+a promise that fulfills when the next set of records has been loaded.
 
 > Because we used `limitToLast` in the example above, `next()` would load the next 10 `limitToLast` records.
 
