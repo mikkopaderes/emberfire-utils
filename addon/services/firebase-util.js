@@ -1,6 +1,4 @@
-/**
- * @module emberfire-utils
- */
+/** @module emberfire-utils */
 import { A } from 'ember-array/utils';
 import { assign } from 'ember-platform';
 import { typeOf } from 'ember-utils';
@@ -26,39 +24,24 @@ import run from 'ember-runloop';
  */
 export default Service.extend({
   /**
-   * Firebase service
-   *
-   * @property firebase
    * @type Ember.Service
    * @readOnly
-   * @default service()
    */
   firebase: service(),
 
   /**
-   * Firebase app service
-   *
-   * @property firebaseApp
    * @type Ember.Service
    * @readOnly
-   * @default service()
    */
   firebaseApp: service(),
 
   /**
-   * Store
-   *
-   * @property store
    * @type Ember.Service
    * @readOnly
-   * @default service()
    */
   store: service(),
 
   /**
-   * Contains all the references to a query
-   *
-   * @property _queryCache
    * @type Object
    * @private
    * @default null
@@ -66,12 +49,9 @@ export default Service.extend({
   _queryCache: null,
 
   /**
-   * Service event.
+   * Service hook.
    *
-   * Workflow:
    * - Set _queryCache to an empty object
-   *
-   * @event init
    */
   init() {
     this._super(...arguments);
@@ -82,13 +62,12 @@ export default Service.extend({
   /**
    * Uploads a file to Firebase storage
    *
-   * @method uploadFile
-   * @param {String} path Storage path
+   * @param {string} path Storage path
    * @param {Blob} file File to upload
    * @param {Object} [metadata={}] File metadata
-   * @param {Function} [onStateChange=() => {}]
+   * @param {function} [onStateChange=() => {}]
    *    Function to call when state changes
-   * @return {Promise|String} Download URL
+   * @return {Promise.<string>} Download URL
    */
   uploadFile(path, file, metadata = {}, onStateChange = () => {}) {
     return new RSVP.Promise((resolve, reject) => {
@@ -96,9 +75,9 @@ export default Service.extend({
           file,
           metadata);
 
-      uploadTask.on('state_changed', snapshot => {
+      uploadTask.on('state_changed', (snapshot) => {
         run(() => onStateChange(snapshot));
-      }, error => {
+      }, (error) => {
         run(null, reject, error);
       }, () => {
         run(null, resolve, uploadTask.snapshot.downloadURL);
@@ -109,15 +88,14 @@ export default Service.extend({
   /**
    * Delete a file from Firebase storage
    *
-   * @method deleteFile
-   * @param {String} url File HTTPS URL
+   * @param {string} url File HTTPS URL
    * @return {Promise} Resolves when deleted.
    */
   deleteFile(url) {
     return new RSVP.Promise((resolve, reject) => {
       this.get('firebaseApp').storage().refFromURL(url).delete().then(() => {
         run(null, resolve, null);
-      }).catch(error => {
+      }).catch((error) => {
         run(null, reject, error);
       });
     });
@@ -126,13 +104,12 @@ export default Service.extend({
   /**
    * Writes to firebase natively in fan-out style
    *
-   * @method update
    * @param {Object} fanoutObject Fan-out object to write
    * @return {Promise} Resolves when update succeeds
    */
   update(fanoutObject) {
     return new RSVP.Promise((resolve, reject) => {
-      this.get('firebase').update(fanoutObject, error => {
+      this.get('firebase').update(fanoutObject, (error) => {
         if (error) {
           run(null, reject, error);
         } else {
@@ -149,10 +126,9 @@ export default Service.extend({
    * Similar to `store.findRecord()` except that this returns the record
    * in a plain object rather than a `DS.Model`.
    *
-   * @method findRecord
-   * @param {String} listenerId Firebase listener ID
-   * @param {String} path Path of records in Firebase
-   * @return {Promise|Object} Resolves to the record
+   * @param {string} listenerId Firebase listener ID
+   * @param {string} path Path of records in Firebase
+   * @return {Promise.<Object>} Resolves to the record
    */
   findRecord(listenerId, path) {
     return new RSVP.Promise((resolve, reject) => {
@@ -163,19 +139,20 @@ export default Service.extend({
       } else {
         let ref = this.get('firebase').child(path);
 
-        query = {ref: ref, path: path, record: {}};
+        query = { ref: ref, path: path, record: {} };
         this.set(`_queryCache.${listenerId}`, query);
 
-        ref.on('value', snapshot => {
+        ref.on('value', (snapshot) => {
           if (snapshot.exists()) {
             this._assignObject(
-                query.record, this._serialize(snapshot.key, snapshot.val()));
+                query.record,
+                this._serialize(snapshot.key, snapshot.val()));
             run(null, resolve, query.record);
           } else {
             this._nullifyObject(query.record);
             run(null, resolve, query.record);
           }
-        }, error => {
+        }, (error) => {
           this._nullifyObject(query.record);
           run(null, reject, error);
         });
@@ -186,34 +163,33 @@ export default Service.extend({
   /**
    * Finds all data from a Firebase path.
    *
-   * Typically, it's bad practice to do a `value` listener on a path 
-   * that has multiple records due to the potential to download huge 
-   * amounts of data whenever a property changes. Thus, any changes 
-   * made under the Firebase path **won't** be synchronized in 
+   * Typically, it's bad practice to do a `value` listener on a path
+   * that has multiple records due to the potential to download huge
+   * amounts of data whenever a property changes. Thus, any changes
+   * made under the Firebase path **won't** be synchronized in
    * realtime.
    *
    * Similar to `store.findAll()` except that this returns the records
    * in plain objects rather than a `DS.Model`.
    *
-   * @method findAll
-   * @param {String} path Path of records in Firebase
-   * @return {Promise|Array} Resolves to all records
+   * @param {string} path Path of records in Firebase
+   * @return {Promise.<Array>} Resolves to all records
    */
   findAll(path) {
     return new RSVP.Promise((resolve, reject) => {
       let ref = this.get('firebase').child(path);
 
-      ref.once('value').then(snapshot => {
+      ref.once('value').then((snapshot) => {
         let records = [];
 
         if (snapshot.exists()) {
-          snapshot.forEach(child => {
+          snapshot.forEach((child) => {
             records.push(this._serialize(child.key, child.val()));
           });
         }
 
         run(null, resolve, records);
-      }).catch(error => {
+      }).catch((error) => {
         run(null, reject, error);
       });
     });
@@ -226,12 +202,11 @@ export default Service.extend({
    * This has the benefit of providing data for infinite scrolling
    * through the `firebaseUtil.next()` function.
    *
-   * @method query
-   * @param {String} modelName Model name of the records to query
-   * @param {String} listenerId Firebase listener ID
-   * @param {String} path Path of records in Firebase
+   * @param {string} modelName Model name of the records to query
+   * @param {string} listenerId Firebase listener ID
+   * @param {string} path Path of records in Firebase
    * @param {Object} [option={}] Query options
-   * @return {Array} Records
+   * @return {Array.<Object>} Records
    */
   query(modelName, listenerId, path, option = {}) {
     return new RSVP.Promise((resolve, reject) => {
@@ -245,7 +220,7 @@ export default Service.extend({
           path: path,
           modelName: modelName,
           willUnshiftRecord: false,
-          records: A()
+          records: new A(),
         };
         option.orderBy = option.hasOwnProperty('orderBy') ?
             option.orderBy : 'id';
@@ -258,7 +233,7 @@ export default Service.extend({
             this._setQueryListeners(query);
             run(null, resolve, query.records);
           });
-        }).catch(error => {
+        }).catch((error) => {
           run(null, reject, error);
         });
       } else {
@@ -270,9 +245,8 @@ export default Service.extend({
   /**
    * Load more records to id in _queryCache
    *
-   * @method next
-   * @param {String} listenerId Listener ID
-   * @param {Number} numberOfRecords Number of records to add
+   * @param {string} listenerId Listener ID
+   * @param {number} numberOfRecords Number of records to add
    */
   next(listenerId, numberOfRecords) {
     let query = this.get('_queryCache')[listenerId];
@@ -296,16 +270,15 @@ export default Service.extend({
   /**
    * Checks if record exists in Firebase
    *
-   * @method isRecordExisting
-   * @param {String} path Firebase path
-   * @return {Promise|Boolean} Resolves to true if record exists.
+   * @param {string} path Firebase path
+   * @return {Promise.<boolean>} Resolves to true if record exists.
    *    Otherwise false.
    */
   isRecordExisting(path) {
     return new RSVP.Promise((resolve, reject) => {
-      this.get('firebase').child(path).once('value').then(snapshot => {
+      this.get('firebase').child(path).once('value').then((snapshot) => {
         run(null, resolve, snapshot.exists());
-      }).catch(error => {
+      }).catch((error) => {
         run(null, reject, error);
       });
     });
@@ -314,9 +287,8 @@ export default Service.extend({
   /**
    * Generate a Firebase push ID for a path
    *
-   * @method generateIdForRecord
-   * @param {String} path Firebase path
-   * @return {String} Push ID
+   * @param {string} path Firebase path
+   * @return {string} Push ID
    */
   generateIdForRecord(path) {
     return this.get('firebase').child(path).push().key;
@@ -345,10 +317,9 @@ export default Service.extend({
    * }
    * ```
    *
-   * @method _serialize
    * @param {string} key Record key
-   * @param {(string|object)} value Record value
-   * @return {object} Serialized record
+   * @param {(string|Object)} value Record value
+   * @return {Object} Serialized record
    * @private
    */
   _serialize(key, value) {
@@ -358,52 +329,45 @@ export default Service.extend({
       record = value;
       record.id = key;
     } else {
-      record = {id: key, value: value};
+      record = { id: key, value: value };
     }
 
     return record;
   },
 
   /**
-   * Polyfill for `Object.assign`.
+   * Polyfill workaround for `Object.assign` on an `Ember.Object` object
+   * property.
    *
-   * `Object.assign` doesn't work consistently with POJO that mutates  
-   * into an `Ember.Object`.
-   *
-   * In production, using `firebaseUtil.findRecord()` inside an 
-   * `RSVP.hash()` for a route's `model()` seems to mutate it for 
-   * whatever reason.
-   *
-   * TODO: Figure out a way to replicate the mutation in unit tests. 
-   *
-   * @method _assignObject
    * @param {Object} objectToUpdate Object to update
    * @param {Object} objectToMerge Object to merge
    * @private
    */
   _assignObject(objectToUpdate, objectToMerge) {
     for (let key in objectToMerge) {
-      set(objectToUpdate, key, objectToMerge[key]);
+      if (Object.prototype.hasOwnProperty.call(objectToMerge, key)) {
+        set(objectToUpdate, key, objectToMerge[key]);
+      }
     }
   },
 
   /**
    * Set all the object key's value to null
    *
-   * @method _nullifyObject
    * @param {Object} object Object to clear
    * @private
    */
   _nullifyObject(object) {
     for (let key in object) {
-      set(object, key, null);
+      if (Object.prototype.hasOwnProperty.call(object, key)) {
+        set(object, key, null);
+      }
     }
   },
 
   /**
    * Set the query sorting and filtering
    *
-   * @method _setQuerySortingAndFiltering
    * @param {Object} query Query object
    * @private
    */
@@ -414,8 +378,8 @@ export default Service.extend({
       query.ref = query.ref.orderByChild(query.orderBy);
     }
 
-    ['startAt', 'endAt', 'equalTo', 'limitToFirst', 'limitToLast'].forEach(
-        type => {
+    [ 'startAt', 'endAt', 'equalTo', 'limitToFirst', 'limitToLast' ].forEach(
+        (type) => {
           if (query.hasOwnProperty(type)) {
             query.ref = query.ref[type](query[type]);
           }
@@ -425,18 +389,17 @@ export default Service.extend({
   /**
    * Set the query listeners
    *
-   * @method _setQueryListeners
    * @param {Object} query Query object
    * @private
    */
   _setQueryListeners(query) {
-    query.ref.on('child_added', snapshot => {
+    query.ref.on('child_added', (snapshot) => {
       run(() => {
         let key = snapshot.key;
 
         if (!query.records.findBy('id', key)) {
           let recordIndex;
-          let tempRecord = {id: key, isLoading: true};
+          let tempRecord = { id: key, isLoading: true };
 
           if (query.willUnshiftRecord) {
             query.records.unshiftObject(tempRecord);
@@ -446,7 +409,7 @@ export default Service.extend({
             recordIndex = query.records.get('length');
           }
 
-          this.get('store').findRecord(query.modelName, key).then(record => {
+          this.get('store').findRecord(query.modelName, key).then((record) => {
             run(() => {
               query.records.insertAt(recordIndex, record);
               query.records.removeObject(tempRecord);
@@ -458,7 +421,7 @@ export default Service.extend({
       run(() => query.records.clear());
     });
 
-    query.ref.on('child_removed', snapshot => {
+    query.ref.on('child_removed', (snapshot) => {
       run(() => {
         let record = query.records.findBy('id', snapshot.key);
 
@@ -469,5 +432,5 @@ export default Service.extend({
     }, () => {
       run(() => query.records.clear());
     });
-  }
+  },
 });

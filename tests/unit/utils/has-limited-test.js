@@ -13,19 +13,19 @@ test('should return a computed promise array when calling hasLimited', function(
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [{
+  const EXPECTED = [ {
     id: 'xfoo',
-    value: 'foo'
+    value: 'foo',
   }, {
     id: 'ydee',
-    value: 'dee'
+    value: 'dee',
   }, {
     id: 'zbar',
-    value: 'bar'
-  }];
+    value: 'bar',
+  } ];
   let EO = EmberObject.extend({
-    firebaseUtil: {query: sinon.stub().returns(stubPromise(true, EXPECTED))},
-    foo: hasLimited('model', 'id', 'usernames')
+    firebaseUtil: { query: sinon.stub().returns(stubPromise(true, EXPECTED)) },
+    foo: hasLimited('model', 'id', 'usernames'),
   });
   let object = EO.create();
 

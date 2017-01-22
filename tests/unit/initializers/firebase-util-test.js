@@ -10,7 +10,7 @@ module('Unit | Initializer | firebase util', {
       application = Ember.Application.create();
       application.deferReadiness();
     });
-  }
+  },
 });
 
 // Replace this with your real tests.

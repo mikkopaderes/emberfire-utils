@@ -1,3 +1,4 @@
+/* eslint-disable */
 import resolver from './helpers/resolver';
 import {
   setResolver

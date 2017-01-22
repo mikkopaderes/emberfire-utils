@@ -1,6 +1,4 @@
-/**
- * @module emberfire-utils
- */
+/** @module emberfire-utils */
 import Ember from 'ember';
 import computed from 'ember-computed';
 
@@ -14,14 +12,13 @@ let PromiseArray = ArrayProxy.extend(PromiseProxyMixin);
  * queries with infinite records through `firebaseUtil.next()`.
  * This will also serialize the records into a `DS.Model`.
  *
- * @method hasLimited
- * @param {String} modelName Model name of the records to query
- * @param {String} listenerId Firebase listener ID
- * @param {String} path Path of records in Firebase
+ * @param {string} modelName Model name of the records to query
+ * @param {string} listenerId Firebase listener ID
+ * @param {string} path Path of records in Firebase
  * @param {Object} [options] Query options
  * @return {Utility.PromiseArray} Promise array resolving to records
  */
-export default function hasLimited(modelName, listenerId, path, option) {
+export default function hasLimited(modelName, listenerId, path, options) {
   return computed({
     get() {
       let newListenerId = listenerId.replace('$id', this.get('id'));
@@ -29,8 +26,11 @@ export default function hasLimited(modelName, listenerId, path, option) {
 
       return PromiseArray.create({
         promise: this.get('firebaseUtil').query(
-            modelName, newListenerId, newPath, option)
+            modelName,
+            newListenerId,
+            newPath,
+            options),
       });
-    }
+    },
   }).readOnly();
 }
