@@ -247,24 +247,35 @@ export default Service.extend({
    *
    * @param {string} listenerId Listener ID
    * @param {number} numberOfRecords Number of records to add
+   * @return {Promise} Resolves when the next set of data has been loaded
    */
   next(listenerId, numberOfRecords) {
-    let query = this.get('_queryCache')[listenerId];
+    return new RSVP.Promise((resolve, reject) => {
+      let query = this.get('_queryCache')[listenerId];
 
-    query.ref.off();
-    query.ref = this.get('firebase').child(query.path);
+      query.ref.off();
+      query.ref = this.get('firebase').child(query.path);
 
-    if (query.hasOwnProperty('limitToFirst')) {
-      query.limitToFirst += numberOfRecords;
-    }
+      if (query.hasOwnProperty('limitToFirst')) {
+        query.limitToFirst += numberOfRecords;
+      }
 
-    if (query.hasOwnProperty('limitToLast')) {
-      query.limitToLast += numberOfRecords;
-      query.willUnshiftRecord = true;
-    }
+      if (query.hasOwnProperty('limitToLast')) {
+        query.limitToLast += numberOfRecords;
+        query.willUnshiftRecord = true;
+      }
 
-    this._setQuerySortingAndFiltering(query);
-    this._setQueryListeners(query);
+      this._setQuerySortingAndFiltering(query);
+
+      query.ref.once('value').then(() => {
+        run(() => {
+          this._setQueryListeners(query);
+          run(null, resolve, null);
+        });
+      }).catch((error) => {
+        run(null, reject, error);
+      });
+    });
   },
 
   /**
