@@ -1,6 +1,5 @@
 import { moduleFor, test } from 'ember-qunit';
 import { assign } from 'ember-platform';
-import RSVP from 'rsvp';
 import wait from 'ember-test-helpers/wait';
 
 import createOfflineRef from 'dummy/tests/helpers/create-offline-ref';
@@ -568,16 +567,29 @@ test('should request for the next limitToFirst records', function(assert) {
   });
 
   // Act
+  // service.query('user', 'id', 'users', {
+  //   limitToFirst: 1,
+  // }).then(() => {
+  //   service.next('id', 1).then(() => {
+  //     service.query('user', 'id', 'users', {
+  //       limitToFirst: 1,
+  //     }).then((actual) => {
+  //       // Assert
+  //       assert.deepEqual(actual, EXPECTED);
+  //     });
+  //   });
+  // });
+
   service.query('user', 'id', 'users', {
     limitToFirst: 1,
-  }).then(() => {
-    service.next('id', 1).then(() => {
-      service.query('user', 'id', 'users', {
-        limitToFirst: 1,
-      }).then((actual) => {
-        // Assert
-        assert.deepEqual(actual, EXPECTED);
-      });
+  }).then(() => service.next('id', 1));
+
+  return wait().then(() => {
+    service.query('user', 'id', 'users', {
+      limitToFirst: 1,
+    }).then((actual) => {
+      // Assert
+      assert.deepEqual(actual, EXPECTED);
     });
   });
 });
@@ -603,16 +615,14 @@ test('should request for the next limitToLast records', function(assert) {
   // Act
   service.query('user', 'id', 'users', {
     limitToLast: 1,
-  }).then(() => {
-    service.next('id', 1).then(() => {
-      service.query('user', 'id', 'users', {
-        limitToLast: 1,
-      }).then((result) => {
-        RSVP.all(result).then((actual) => {
-          // Assert
-          assert.deepEqual(actual, EXPECTED);
-        });
-      });
+  }).then(() => service.next('id', 1));
+
+  return wait().then(() => {
+    service.query('user', 'id', 'users', {
+      limitToLast: 1,
+    }).then((actual) => {
+      // Assert
+      assert.deepEqual(actual, EXPECTED);
     });
   });
 });

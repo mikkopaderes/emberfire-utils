@@ -228,10 +228,27 @@ export default Service.extend({
         this.set(`_queryCache.${listenerId}`, query);
         this._setQuerySortingAndFiltering(query);
 
-        query.ref.once('value').then(() => {
+        // Set an active listener to cache the data for child_added.
+        // The child_added listener will turn this off later.
+        query.ref.on('value', () => {});
+        query.ref.once('value').then((snapshot) => {
           run(() => {
-            this._setQueryListeners(query);
-            run(null, resolve, query.records);
+            if (snapshot.exists()) {
+              let requests = Object.keys(snapshot.val()).map((key) => {
+                return this.get('store').findRecord(query.modelName, key);
+              });
+
+              RSVP.all(requests).then((records) => {
+                run(() => {
+                  records.forEach((record) => query.records.pushObject(record));
+                  this._setQueryListeners(query);
+                  run(null, resolve, query.records);
+                });
+              });
+            } else {
+              this._setQueryListeners(query);
+              run(null, resolve, query.records);
+            }
           });
         }).catch((error) => {
           run(null, reject, error);
@@ -267,10 +284,40 @@ export default Service.extend({
 
       this._setQuerySortingAndFiltering(query);
 
-      query.ref.once('value').then(() => {
+      // Set an active listener to cache the data for child_added.
+      // The child_added listener will turn this off later.
+      query.ref.on('value', () => {});
+      query.ref.once('value').then((snapshot) => {
         run(() => {
-          this._setQueryListeners(query);
-          run(null, resolve, null);
+          if (snapshot.exists()) {
+            let requests = [];
+
+            for (let key of Object.keys(snapshot.val())) {
+              if (!query.records.findBy('id', key)) {
+                requests.push(this.get('store').findRecord(
+                    query.modelName,
+                    key));
+              }
+            }
+
+            RSVP.all(requests).then((records) => {
+              run(() => {
+                for (let record of records) {
+                  if (query.willUnshiftRecord) {
+                    query.records.unshiftObject(record);
+                  } else {
+                    query.records.pushObject(record);
+                  }
+                }
+
+                this._setQueryListeners(query);
+                run(null, resolve, query.records);
+              });
+            });
+          } else {
+            this._setQueryListeners(query);
+            run(null, resolve, query.records);
+          }
         });
       }).catch((error) => {
         run(null, reject, error);
@@ -427,6 +474,10 @@ export default Service.extend({
             });
           });
         }
+
+        // Turn off the active value listener since the child_added is
+        // now in responsible for caching the data.
+        query.ref.off('value');
       });
     }, () => {
       run(() => query.records.clear());
