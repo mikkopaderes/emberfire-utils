@@ -292,23 +292,23 @@ export default Service.extend({
           if (snapshot.exists()) {
             let requests = [];
 
-            for (let key of Object.keys(snapshot.val())) {
+            Object.keys(snapshot.val()).forEach((key) => {
               if (!query.records.findBy('id', key)) {
                 requests.push(this.get('store').findRecord(
                     query.modelName,
                     key));
               }
-            }
+            });
 
             RSVP.all(requests).then((records) => {
               run(() => {
-                for (let record of records) {
+                records.forEach((record) => {
                   if (query.willUnshiftRecord) {
                     query.records.unshiftObject(record);
                   } else {
                     query.records.pushObject(record);
                   }
-                }
+                });
 
                 this._setQueryListeners(query);
                 run(null, resolve, query.records);
