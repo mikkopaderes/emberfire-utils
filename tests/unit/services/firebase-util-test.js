@@ -567,19 +567,6 @@ test('should request for the next limitToFirst records', function(assert) {
   });
 
   // Act
-  // service.query('user', 'id', 'users', {
-  //   limitToFirst: 1,
-  // }).then(() => {
-  //   service.next('id', 1).then(() => {
-  //     service.query('user', 'id', 'users', {
-  //       limitToFirst: 1,
-  //     }).then((actual) => {
-  //       // Assert
-  //       assert.deepEqual(actual, EXPECTED);
-  //     });
-  //   });
-  // });
-
   service.query('user', 'id', 'users', {
     limitToFirst: 1,
   }).then(() => service.next('id', 1));
