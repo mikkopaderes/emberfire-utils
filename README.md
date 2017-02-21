@@ -210,23 +210,20 @@ this.get('firebaseUtil').isRecordExisting('users/foo').then(result => {
 ### Querying for multiple records
 
 To query for multiple records, call `query()` method on the `firebase-util` service. This returns a promise 
-that fulfills to an empty array. This array will be mutated for every `child_added` and `child_removed` events. 
-
-With the constant mutation of your queried records depending on your filters and usage of  `next()` for 
-infinite scrolling, you shouldn't be doing any post processing to the records returned by the promise since 
-you'll never really get an accurate representation of your data.
-
-The benefit of `query()` returning a promise are for your loading states in your templates/route.
+that fulfills to the requested records. This array will be mutated for every `child_added` and `child_removed` events.
 
 Unlike `findRecord()` and `findAll()`, this serializes the records to a specified model.
 
 ```javascript
-this.get('firebaseUtil').query('post', 'referenceId', 'userFeeds/foo', {limitToLast: 1});
+this.get('firebaseUtil').query('post', 'referenceId', 'userFeeds/foo', { limitToLast: 1 });
 ```
 
 The first param is the model name and the fourth param are the Firebase filters which uses the same format as 
 the one in [EmberFire](https://github.com/firebase/emberfire/blob/master/docs/guide/querying-data.md).
 
+> Be wary of the gotchas when post processing the resolved records of the `query()` promise.
+> With the constant mutation of your queried records depending on your filters and usage of  `next()` for 
+> infinite scrolling, you may not get an accurate representation of your data.
 
 #### Loading more records in your queries for infinite scrolling
 

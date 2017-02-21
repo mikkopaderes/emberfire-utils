@@ -6,7 +6,7 @@ import RSVP from 'rsvp';
 import Service from 'ember-service';
 import service from 'ember-service/inject';
 import set from 'ember-metal/set';
-import run from 'ember-runloop';
+import run, { bind } from 'ember-runloop';
 
 /**
  * This is a utility service that works on top of Emberfire.
@@ -228,14 +228,25 @@ export default Service.extend({
         this.set(`_queryCache.${listenerId}`, query);
         this._setQuerySortingAndFiltering(query);
 
-        query.ref.once('value').then(() => {
-          run(() => {
+        // Set an active listener to cache the data for child_added.
+        // The child_added listener will turn this off later.
+        query.ref.on('value', () => {});
+        query.ref.once('value').then(bind(this, (snapshot) => {
+          if (snapshot.exists()) {
+            let requests = Object.keys(snapshot.val()).map((key) => {
+              return this.get('store').findRecord(query.modelName, key);
+            });
+
+            RSVP.all(requests).then(bind(this, (records) => {
+              records.forEach((record) => query.records.pushObject(record));
+              this._setQueryListeners(query);
+              resolve(query.records);
+            }));
+          } else {
             this._setQueryListeners(query);
-            run(null, resolve, query.records);
-          });
-        }).catch((error) => {
-          run(null, reject, error);
-        });
+            resolve(query.records);
+          }
+        })).catch(bind(this, (error) => reject(error)));
       } else {
         run(null, resolve, query.records);
       }
@@ -267,14 +278,36 @@ export default Service.extend({
 
       this._setQuerySortingAndFiltering(query);
 
-      query.ref.once('value').then(() => {
-        run(() => {
+      // Set an active listener to cache the data for child_added.
+      // The child_added listener will turn this off later.
+      query.ref.on('value', () => {});
+      query.ref.once('value').then(bind(this, (snapshot) => {
+        if (snapshot.exists()) {
+          let requests = [];
+
+          Object.keys(snapshot.val()).forEach((key) => {
+            if (!query.records.findBy('id', key)) {
+              requests.push(this.get('store').findRecord(query.modelName, key));
+            }
+          });
+
+          RSVP.all(requests).then(bind(this, (records) => {
+            records.forEach((record) => {
+              if (query.willUnshiftRecord) {
+                query.records.unshiftObject(record);
+              } else {
+                query.records.pushObject(record);
+              }
+            });
+
+            this._setQueryListeners(query);
+            resolve(query.records);
+          }));
+        } else {
           this._setQueryListeners(query);
-          run(null, resolve, null);
-        });
-      }).catch((error) => {
-        run(null, reject, error);
-      });
+          resolve(query.records);
+        }
+      })).catch(bind(this, (error) => reject(error)));
     });
   },
 
@@ -404,44 +437,38 @@ export default Service.extend({
    * @private
    */
   _setQueryListeners(query) {
-    query.ref.on('child_added', (snapshot) => {
-      run(() => {
-        let key = snapshot.key;
+    query.ref.on('child_added', bind(this, (snapshot) => {
+      // Turn off the active value listener since the child_added is
+      // now in responsible for caching the data.
+      query.ref.off('value');
 
-        if (!query.records.findBy('id', key)) {
-          let recordIndex;
-          let tempRecord = { id: key, isLoading: true };
+      let key = snapshot.key;
 
-          if (query.willUnshiftRecord) {
-            query.records.unshiftObject(tempRecord);
-            recordIndex = 1;
-          } else {
-            query.records.pushObject(tempRecord);
-            recordIndex = query.records.get('length');
-          }
+      if (!query.records.findBy('id', key)) {
+        let recordIndex;
+        let tempRecord = { id: key, isLoading: true };
 
-          this.get('store').findRecord(query.modelName, key).then((record) => {
-            run(() => {
-              query.records.insertAt(recordIndex, record);
-              query.records.removeObject(tempRecord);
-            });
-          });
+        if (query.willUnshiftRecord) {
+          query.records.unshiftObject(tempRecord);
+          recordIndex = 1;
+        } else {
+          query.records.pushObject(tempRecord);
+          recordIndex = query.records.get('length');
         }
-      });
-    }, () => {
-      run(() => query.records.clear());
-    });
 
-    query.ref.on('child_removed', (snapshot) => {
-      run(() => {
-        let record = query.records.findBy('id', snapshot.key);
+        this.get('store').findRecord(query.modelName, key).then((record) => {
+          query.records.insertAt(recordIndex, record);
+          query.records.removeObject(tempRecord);
+        });
+      }
+    }), bind(this, query.records.clear));
 
-        if (record) {
-          query.records.removeObject(record);
-        }
-      });
-    }, () => {
-      run(() => query.records.clear());
-    });
+    query.ref.on('child_removed', bind(this, (snapshot) => {
+      let record = query.records.findBy('id', snapshot.key);
+
+      if (record) {
+        query.records.removeObject(record);
+      }
+    }), bind(this, query.records.clear));
   },
 });
