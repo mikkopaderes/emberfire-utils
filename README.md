@@ -219,7 +219,8 @@ this.get('firebaseUtil').query('post', 'referenceId', 'userFeeds/foo', { limitTo
 ```
 
 The first param is the model name and the fourth param are the Firebase filters which uses the same format as 
-the one in [EmberFire](https://github.com/firebase/emberfire/blob/master/docs/guide/querying-data.md).
+the one in [EmberFire](https://github.com/firebase/emberfire/blob/master/docs/guide/querying-data.md) with the
+addition of supporting `orderByValue()` through `orderBy: '.value'`.
 
 > Be wary of the gotchas when post processing the resolved records of the `query()` promise.
 > With the constant mutation of your queried records depending on your filters and usage of  `next()` for 
