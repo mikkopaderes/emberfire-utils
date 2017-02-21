@@ -369,8 +369,8 @@ test('should return an empty array when finding all records that does not exist'
 //   });
 // });
 
-// TODO: Add tests for orderByChild and orderByValue. Last I checked,
-// it wasn't working during tests runs but it works on production.
+// Order queries doesn't work in MockFirebase.
+// See: https://github.com/katowulf/mockfirebase/pull/61
 test('should query ordered by key', function(assert) {
   assert.expect(1);
 

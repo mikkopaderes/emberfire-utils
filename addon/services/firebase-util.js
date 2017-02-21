@@ -418,6 +418,8 @@ export default Service.extend({
   _setQuerySortingAndFiltering(query) {
     if (query.orderBy === 'id') {
       query.ref = query.ref.orderByKey();
+    } else if (query.orderBy === '.value') {
+      query.ref = query.ref.orderByValue();
     } else {
       query.ref = query.ref.orderByChild(query.orderBy);
     }
