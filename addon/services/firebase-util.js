@@ -75,13 +75,13 @@ export default Service.extend({
           file,
           metadata);
 
-      uploadTask.on('state_changed', (snapshot) => {
-        run(() => onStateChange(snapshot));
-      }, (error) => {
-        run(null, reject, error);
-      }, () => {
-        run(null, resolve, uploadTask.snapshot.downloadURL);
-      });
+      uploadTask.on('state_changed', bind(this, (snapshot) => {
+        onStateChange(snapshot);
+      }), bind(this, (error) => {
+        reject(error);
+      }), bind(this, () => {
+        resolve(uploadTask.snapshot.downloadURL);
+      }));
     });
   },
 
@@ -93,11 +93,8 @@ export default Service.extend({
    */
   deleteFile(url) {
     return new RSVP.Promise((resolve, reject) => {
-      this.get('firebaseApp').storage().refFromURL(url).delete().then(() => {
-        run(null, resolve, null);
-      }).catch((error) => {
-        run(null, reject, error);
-      });
+      this.get('firebaseApp').storage().refFromURL(url).delete().then(
+          bind(this, resolve)).catch(bind(this, (error) => reject(error)));
     });
   },
 
@@ -109,13 +106,13 @@ export default Service.extend({
    */
   update(fanoutObject) {
     return new RSVP.Promise((resolve, reject) => {
-      this.get('firebase').update(fanoutObject, (error) => {
+      this.get('firebase').update(fanoutObject, bind(this, (error) => {
         if (error) {
-          run(null, reject, error);
+          reject(error);
         } else {
-          run(null, resolve, null);
+          resolve();
         }
-      });
+      }));
     });
   },
 
@@ -142,20 +139,20 @@ export default Service.extend({
         query = { ref: ref, path: path, record: {} };
         this.set(`_queryCache.${listenerId}`, query);
 
-        ref.on('value', (snapshot) => {
+        ref.on('value', bind(this, (snapshot) => {
           if (snapshot.exists()) {
             this._assignObject(
                 query.record,
                 this._serialize(snapshot.key, snapshot.val()));
-            run(null, resolve, query.record);
+            resolve(query.record);
           } else {
             this._nullifyObject(query.record);
-            run(null, resolve, query.record);
+            resolve(query.record);
           }
-        }, (error) => {
+        }), bind(this, (error) => {
           this._nullifyObject(query.record);
-          run(null, reject, error);
-        });
+          reject(error);
+        }));
       }
     });
   },
@@ -179,7 +176,7 @@ export default Service.extend({
     return new RSVP.Promise((resolve, reject) => {
       let ref = this.get('firebase').child(path);
 
-      ref.once('value').then((snapshot) => {
+      ref.once('value').then(bind(this, (snapshot) => {
         let records = [];
 
         if (snapshot.exists()) {
@@ -188,10 +185,8 @@ export default Service.extend({
           });
         }
 
-        run(null, resolve, records);
-      }).catch((error) => {
-        run(null, reject, error);
-      });
+        resolve(records);
+      })).catch(bind(this, (error) => reject(error)));
     });
   },
 
@@ -320,11 +315,10 @@ export default Service.extend({
    */
   isRecordExisting(path) {
     return new RSVP.Promise((resolve, reject) => {
-      this.get('firebase').child(path).once('value').then((snapshot) => {
-        run(null, resolve, snapshot.exists());
-      }).catch((error) => {
-        run(null, reject, error);
-      });
+      this.get('firebase').child(path).once('value').then(
+          bind(this, (snapshot) => {
+            resolve(snapshot.exists());
+          })).catch(bind(this, (error) => reject(error)));
     });
   },
 
