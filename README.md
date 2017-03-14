@@ -272,11 +272,9 @@ Notice the `$id`. It's a keyword that will be replaced by the model's ID.
 
 ## Compatibility
 
-This addon currently supports Ember CLI 2.8.0 that comes with Ember.js 2.8-LTS.
+This addon currently supports Ember.js 2.8-LTS and EmberFire 2.0.x.
 
-> I'm planning to support only the latest [Ember CLI](https://ember-cli.com/) that comes with the latest LTS 
-> version of Ember.js. No other tests will be made for other versions. In addition, this addon's dependency of 
-> EmberFire would be of the latest version that's compatible with the Ember CLI mentioned earlier.
+> I'm planning to support only the latest LTS version of Ember.js and the latest version EmberFire.
 
 ## Contributing
 
