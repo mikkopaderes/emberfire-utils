@@ -16,7 +16,7 @@ module.exports = {
       code: 80,
       tabWidth: 2,
       ignoreUrls: true,
-      ignorePattern: '^(import|test)',
+      ignorePattern: '^(import|test|moduleFor)',
     }],
     'object-curly-spacing': [ 2, 'always' ],
 
