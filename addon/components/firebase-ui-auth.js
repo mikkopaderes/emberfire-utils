@@ -1,4 +1,5 @@
 /** @module emberfire-utils */
+import { scheduleOnce } from 'ember-runloop';
 import Component from 'ember-component';
 import inject from 'ember-service/inject';
 
@@ -42,20 +43,22 @@ export default Component.extend({
    *
    * - Renders the FirebaseUI auth widget
    */
-  init() {
+  didInsertElement() {
     this._super(...arguments);
 
-    let auth = this.get('firebaseApp').auth();
-    let ui = new FirebaseUi.auth.AuthUI(auth);
+    scheduleOnce('afterRender', () => {
+      let auth = this.get('firebaseApp').auth();
+      let ui = new FirebaseUi.auth.AuthUI(auth);
 
-    ui.start('#firebaseui-auth-container', this.getAttr('uiConfig'));
-    this.set('ui', ui);
+      ui.start('#firebaseui-auth-container', this.getAttr('uiConfig'));
+      this.set('ui', ui);
+    });
   },
 
   /**
    * Component hook.
    *
-   * - Dispose the auth widget
+   * - Dispose the FirebaseUI auth widget
    */
   willDestroyElement() {
     this._super(...arguments);
