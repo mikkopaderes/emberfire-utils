@@ -4,6 +4,7 @@ import Component from 'ember-component';
 import inject from 'ember-service/inject';
 
 import FirebaseUi from 'firebaseui';
+import firebase from 'firebase';
 
 import layout from '../templates/components/firebase-ui-auth';
 
@@ -47,6 +48,9 @@ export default Component.extend({
     this._super(...arguments);
 
     scheduleOnce('afterRender', () => {
+      // Workaround for when the firebase asset is an AMD module
+      window.firebase = firebase;
+
       let auth = this.get('firebaseApp').auth();
       let ui = new FirebaseUi.auth.AuthUI(auth);
 
