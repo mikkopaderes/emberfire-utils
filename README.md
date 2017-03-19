@@ -16,6 +16,7 @@ ember install emberfire-utils
 * [Storage manipulations](#storage-manipulations)
 * [Flexible queries for flattened data structure and infinite scrolling](#flexible-queries)
 * [`hasLimited` model relationship](#haslimited-relationship)
+* [FirebaseUI](#firebaseui)
 
 ## Usage
 
@@ -270,11 +271,38 @@ Notice the `$id`. It's a keyword that will be replaced by the model's ID.
 
 > `hasLimited()` are read only.
 
+### [FirebaseUI](https://github.com/firebase/firebaseui-web)
+
+#### Auth
+
+A component is provided for rendering FirebaseUI Auth. Here's how:
+
+First setup your `uiConfig` which is exactly the same with [Firebase UI Auth](https://github.com/firebase/firebaseui-web#configuration).
+
+```javascript
+import firebaseui from 'firebaseui';
+
+uiConfig = {
+  signInSuccessUrl: '<url-to-redirect-to-on-success>',
+  signInOptions: [
+    firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+    firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+    firebase.auth.TwitterAuthProvider.PROVIDER_ID,
+    firebase.auth.GithubAuthProvider.PROVIDER_ID,
+    firebase.auth.EmailAuthProvider.PROVIDER_ID
+  ],
+};
+```
+
+Then pass that `uiConfig` into the `firebase-ui-auth` component.
+
+```javascript
+{{firebase-ui-auth uiConfig=uiConfig}}
+```
+
 ## Compatibility
 
-This addon currently supports Ember.js 2.8-LTS and EmberFire 2.0.x.
-
-> I'm planning to support only the latest LTS version of Ember.js and the latest version EmberFire.
+This addon is compatible with EmberFire 2.0.x.
 
 ## Contributing
 
