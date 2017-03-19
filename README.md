@@ -280,6 +280,7 @@ A component is provided for rendering FirebaseUI Auth. Here's how:
 First setup your `uiConfig` which is exactly the same with [Firebase UI Auth](https://github.com/firebase/firebaseui-web#configuration).
 
 ```javascript
+import firebase from 'firebase';
 import firebaseui from 'firebaseui';
 
 let uiConfig = {
