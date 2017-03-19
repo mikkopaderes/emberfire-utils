@@ -1,0 +1,1 @@
+export { default } from 'emberfire-utils/components/firebase-ui-auth';
