@@ -284,6 +284,7 @@ import firebase from 'firebase';
 import firebaseui from 'firebaseui';
 
 let uiConfig = {
+  credentialHelper: firebaseui.auth.CredentialHelper.NONE,
   signInSuccessUrl: '<url-to-redirect-to-on-success>',
   signInOptions: [
     firebase.auth.GoogleAuthProvider.PROVIDER_ID,
