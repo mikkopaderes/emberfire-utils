@@ -1,19 +1,30 @@
 import { moduleForComponent, test } from 'ember-qunit';
-// import hbs from 'htmlbars-inline-precompile';
+import Service from 'ember-service';
+import hbs from 'htmlbars-inline-precompile';
+
+import sinon from 'sinon';
 
 moduleForComponent('firebase-ui-auth', 'Integration | Component | firebase ui auth', {
   integration: true,
 });
 
-test('TODO: should render firebase ui auth widget', function(assert) {
+test('should render firebase ui auth widget', function(assert) {
   assert.expect(1);
 
   // Arrange
-  // this.set('uiConfig', { foo: 'bar' });
+  let startAuthUiStub = sinon.stub();
+  let firebaseUiStub = Service.extend({
+    startAuthUi: startAuthUiStub,
+    resetAuthUi: sinon.stub(),
+  });
+
+  this.register('service:firebase-ui', firebaseUiStub);
+  this.inject.service('firebase-ui', { as: 'firebaseUi' });
+  this.set('uiConfig', { foo: 'bar' });
 
   // Act
-  // this.render(hbs`{{firebase-ui-auth uiConfig=uiConfig}}`);
+  this.render(hbs`{{firebase-ui-auth uiConfig=uiConfig}}`);
 
   // Assert
-  assert.ok(true);
+  assert.ok(startAuthUiStub.calledWithExactly(this.get('uiConfig')));
 });
