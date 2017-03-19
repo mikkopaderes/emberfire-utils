@@ -18,6 +18,21 @@ ember install emberfire-utils
 * [`hasLimited` model relationship](#haslimited-relationship)
 * [FirebaseUI](#firebaseui)
 
+## Configuration
+
+You can optionally specify what libraries you'd want to include in your build within your `ember-cli-build.js`.
+Here's how:
+
+```javascript
+var app = new EmberApp(defaults, {
+  'emberfire-utils': {
+    exclude: [ 'firebase-util', 'firebase-ui' ],
+  },
+});
+```
+
+> Possible exclusions are `firebase-util` and `firebase-ui`.
+
 ## Usage
 
 > You'll notice the `firebase-util` service that's used across the examples below. This service is automatically 
