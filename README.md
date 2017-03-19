@@ -282,7 +282,7 @@ First setup your `uiConfig` which is exactly the same with [Firebase UI Auth](ht
 ```javascript
 import firebaseui from 'firebaseui';
 
-uiConfig = {
+let uiConfig = {
   signInSuccessUrl: '<url-to-redirect-to-on-success>',
   signInOptions: [
     firebase.auth.GoogleAuthProvider.PROVIDER_ID,
