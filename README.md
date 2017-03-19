@@ -20,7 +20,7 @@ ember install emberfire-utils
 
 ## Configuration
 
-You can optionally specify what libraries you'd want to include in your build within your `ember-cli-build.js`.
+You can optionally specify what libraries you'd want to exclude in your build within your `ember-cli-build.js`.
 Here's how:
 
 ```javascript
