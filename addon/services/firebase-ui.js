@@ -48,10 +48,10 @@ export default Service.extend({
 
     if (!ui) {
       ui = new FirebaseUi.auth.AuthUI(auth);
+      this.set('ui', ui);
     }
 
     ui.start('#firebaseui-auth-container', uiConfig);
-    this.set('ui', ui);
   },
 
   /**
