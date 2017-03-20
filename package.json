@@ -41,7 +41,6 @@
     "ember-welcome-page": "^1.0.1",
     "emberfire": "^2.0.0",
     "eslint-config-google": "^0.7.1",
-    "firebaseui": "^1.0.0",
     "loader.js": "^4.0.1"
   },
   "keywords": [
@@ -53,7 +52,8 @@
     "broccoli-funnel": "^1.0.0",
     "ember-cli-babel": "^5.1.6",
     "ember-cli-htmlbars": "^1.0.3",
-    "ember-cli-node-assets": "0.1.6"
+    "ember-cli-node-assets": "0.1.6",
+    "firebaseui": "^1.0.0"
   },
   "ember-addon": {
     "configPath": "tests/dummy/config"
