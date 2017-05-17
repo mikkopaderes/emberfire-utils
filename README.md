@@ -328,7 +328,6 @@ This addon is compatible with EmberFire 2.0.x.
 * `git clone <repository-url>` this repository
 * `cd emberfire-utils`
 * `npm install`
-* `bower install`
 
 ### Running
 
