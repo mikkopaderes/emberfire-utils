@@ -1,7 +1,7 @@
 module.exports = {
   root: true,
   parserOptions: {
-    ecmaVersion: 6,
+    ecmaVersion: 2017,
     sourceType: 'module'
   },
   extends: [ 'eslint:recommended', 'google' ],
@@ -10,18 +10,21 @@ module.exports = {
     'es6': true,
   },
   rules: {
-    'array-bracket-spacing': [ 2, 'always' ],
-    'linebreak-style': 0,
-    'max-len': [2, {
+    'array-bracket-spacing': [ 'error', 'always', {
+      'objectsInArrays': false,
+      'arraysInArrays': false,
+    }],
+    'linebreak-style': 'off',
+    'max-len': [ 'error', {
       code: 80,
       tabWidth: 2,
       ignoreUrls: true,
-      ignorePattern: '^(import|test|moduleFor)',
+      ignorePattern: '^import|test|moduleFor',
     }],
-    'object-curly-spacing': [ 2, 'always' ],
+    'object-curly-spacing': [ 'error', 'always' ],
 
     // google config overrides due to unavoidable ember issues
-    'no-invalid-this': 0,
-    'prefer-rest-params': 0,
+    'no-invalid-this': 'off',
+    'prefer-rest-params': 'off',
   }
 };

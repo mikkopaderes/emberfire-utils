@@ -1,4 +1,3 @@
-/* eslint-disable */
 import Resolver from '../../resolver';
 import config from '../../config/environment';
 
