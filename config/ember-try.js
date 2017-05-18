@@ -89,7 +89,7 @@ module.exports = {
     },
     {
       name: 'ember-data-release',
-      bower: {
+      npm: {
         dependencies: {
           'ember-data': 'components/ember-data#release'
         },
@@ -100,7 +100,7 @@ module.exports = {
     },
     {
       name: 'ember-data-beta',
-      bower: {
+      npm: {
         dependencies: {
           'ember-data': 'components/ember-data#beta'
         },
@@ -111,7 +111,7 @@ module.exports = {
     },
     {
       name: 'ember-data-canary',
-      bower: {
+      npm: {
         dependencies: {
           'ember-data': 'components/ember-data#canary'
         },
