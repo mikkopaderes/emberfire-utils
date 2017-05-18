@@ -3,8 +3,7 @@ import { moduleFor, test } from 'ember-qunit';
 import sinon from 'sinon';
 
 moduleFor('service:firebase-ui', 'Unit | Service | firebase ui', {
-  // Specify the other units that are required for this test.
-  // needs: ['service:foo']
+  needs: [ 'service:firebase-app' ],
 });
 
 test('should start auth UI', function(assert) {

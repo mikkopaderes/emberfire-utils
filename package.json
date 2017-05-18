@@ -2,58 +2,57 @@
   "name": "emberfire-utils",
   "version": "1.3.0",
   "description": "Useful utilities on top of EmberFire",
-  "directories": {
-    "doc": "doc",
-    "test": "tests"
-  },
-  "scripts": {
-    "build": "ember build",
-    "start": "ember server",
-    "test": "ember try:each"
-  },
-  "repository": "https://github.com/rmmmp/emberfire-utils",
-  "engines": {
-    "node": ">= 0.10.0"
-  },
-  "author": "Mikko Paderes",
-  "license": "MIT",
-  "devDependencies": {
-    "broccoli-asset-rev": "^2.4.2",
-    "ember-ajax": "^2.0.1",
-    "ember-cli": "2.8.0",
-    "ember-cli-app-version": "^1.0.0",
-    "ember-cli-dependency-checker": "^1.2.0",
-    "ember-cli-eslint": "3.0.2",
-    "ember-cli-htmlbars": "^1.0.3",
-    "ember-cli-htmlbars-inline-precompile": "^0.3.1",
-    "ember-cli-inject-live-reload": "^1.4.0",
-    "ember-cli-qunit": "^2.1.0",
-    "ember-cli-release": "^0.2.9",
-    "ember-cli-sri": "^2.1.0",
-    "ember-cli-test-loader": "^1.1.0",
-    "ember-cli-uglify": "^1.2.0",
-    "ember-data": "~2.8.0",
-    "ember-disable-prototype-extensions": "^1.1.0",
-    "ember-export-application-global": "^1.0.5",
-    "ember-load-initializers": "^0.5.1",
-    "ember-resolver": "^2.0.3",
-    "ember-sinon": "0.5.1",
-    "ember-welcome-page": "^1.0.1",
-    "emberfire": "^2.0.0",
-    "eslint-config-google": "^0.7.1",
-    "loader.js": "^4.0.1"
-  },
   "keywords": [
     "ember-addon",
     "emberfire",
     "firebase"
   ],
+  "license": "MIT",
+  "author": "Mikko Paderes",
+  "directories": {
+    "doc": "doc",
+    "test": "tests"
+  },
+  "repository": "https://github.com/rmmmp/emberfire-utils",
+  "scripts": {
+    "build": "ember build",
+    "start": "ember server",
+    "test": "ember try:each"
+  },
   "dependencies": {
-    "broccoli-funnel": "^1.0.0",
-    "ember-cli-babel": "^5.1.6",
-    "ember-cli-htmlbars": "^1.0.3",
-    "ember-cli-node-assets": "0.1.6",
-    "firebaseui": "^1.0.0"
+    "broccoli-funnel": "^1.2.0",
+    "ember-cli-babel": "^6.0.0",
+    "ember-cli-htmlbars": "^1.1.1",
+    "ember-cli-node-assets": "0.2.2",
+    "firebaseui": "^1.0.1"
+  },
+  "devDependencies": {
+    "ember-sinon": "0.7.0",
+    "emberfire": "^2.0.7",
+    "eslint-config-google": "^0.7.1",
+
+    "broccoli-asset-rev": "^2.4.5",
+    "ember-ajax": "^3.0.0",
+    "ember-cli": "2.13.1",
+    "ember-cli-dependency-checker": "^1.3.0",
+    "ember-cli-eslint": "^3.0.0",
+    "ember-cli-htmlbars-inline-precompile": "^0.4.0",
+    "ember-cli-inject-live-reload": "^1.4.1",
+    "ember-cli-qunit": "^4.0.0",
+    "ember-cli-shims": "^1.1.0",
+    "ember-cli-sri": "^2.1.0",
+    "ember-cli-uglify": "^1.2.0",
+    "ember-data": "~2.13.0",
+    "ember-disable-prototype-extensions": "^1.1.0",
+    "ember-export-application-global": "^2.0.0",
+    "ember-load-initializers": "^1.0.0",
+    "ember-resolver": "^4.0.0",
+    "ember-source": "~2.13.0",
+    "ember-welcome-page": "^3.0.0",
+    "loader.js": "^4.2.3"
+  },
+  "engines": {
+    "node": ">= 4"
   },
   "ember-addon": {
     "configPath": "tests/dummy/config"

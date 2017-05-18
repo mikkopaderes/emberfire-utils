@@ -23,6 +23,7 @@ const FIXTURE_DATA = {
 };
 
 moduleFor('service:firebase-util', 'Unit | Service | firebase util', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
   beforeEach() {
     stubFirebase();
     this.ref = createOfflineRef(FIXTURE_DATA);
@@ -317,7 +318,7 @@ test('should find all records', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [ {
+  const EXPECTED = [{
     id: 'foo',
     photoURL: 'foo.jpg',
     username: 'bar',
@@ -325,7 +326,7 @@ test('should find all records', function(assert) {
     id: 'hello',
     photoURL: 'hello.jpg',
     username: 'world',
-  } ];
+  }];
   let service = this.subject({ firebase: this.ref });
 
   // Act
@@ -375,7 +376,7 @@ test('should query ordered by key', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [ {
+  const EXPECTED = [{
     id: 'foo',
     photoURL: 'foo.jpg',
     username: 'bar',
@@ -383,7 +384,7 @@ test('should query ordered by key', function(assert) {
     id: 'hello',
     photoURL: 'hello.jpg',
     username: 'world',
-  } ];
+  }];
   let service = this.subject({
     store: { findRecord: findRecordStub },
     firebase: this.ref,
@@ -400,7 +401,7 @@ test('should query equal to value', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [ { id: 'foo', photoURL: 'foo.jpg', username: 'bar' } ];
+  const EXPECTED = [{ id: 'foo', photoURL: 'foo.jpg', username: 'bar' }];
   let service = this.subject({
     store: { findRecord: findRecordStub },
     firebase: this.ref,
@@ -419,7 +420,7 @@ test('should query start at and end at value', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [ { id: 'foo', photoURL: 'foo.jpg', username: 'bar' } ];
+  const EXPECTED = [{ id: 'foo', photoURL: 'foo.jpg', username: 'bar' }];
   let service = this.subject({
     store: { findRecord: findRecordStub },
     firebase: this.ref,
@@ -439,7 +440,7 @@ test('should query limit to first records', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [ { id: 'foo', photoURL: 'foo.jpg', username: 'bar' } ];
+  const EXPECTED = [{ id: 'foo', photoURL: 'foo.jpg', username: 'bar' }];
   let service = this.subject({
     store: { findRecord: findRecordStub },
     firebase: this.ref,
@@ -458,11 +459,11 @@ test('should query limit to last records', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [ {
+  const EXPECTED = [{
     id: 'hello',
     photoURL: 'hello.jpg',
     username: 'world',
-  } ];
+  }];
   let service = this.subject({
     store: { findRecord: findRecordStub },
     firebase: this.ref,
@@ -506,7 +507,7 @@ test('should return cached records on query when available', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [ {
+  const EXPECTED = [{
     id: 'foo',
     photoURL: 'foo.jpg',
     username: 'bar',
@@ -514,7 +515,7 @@ test('should return cached records on query when available', function(assert) {
     id: 'hello',
     photoURL: 'hello.jpg',
     username: 'world',
-  } ];
+  }];
   let service = this.subject({
     store: { findRecord: findRecordStub },
     firebase: this.ref,
@@ -552,7 +553,7 @@ test('should request for the next limitToFirst records', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [ {
+  const EXPECTED = [{
     id: 'foo',
     photoURL: 'foo.jpg',
     username: 'bar',
@@ -560,7 +561,7 @@ test('should request for the next limitToFirst records', function(assert) {
     id: 'hello',
     photoURL: 'hello.jpg',
     username: 'world',
-  } ];
+  }];
   let service = this.subject({
     store: { findRecord: findRecordStub },
     firebase: this.ref,
@@ -585,7 +586,7 @@ test('should request for the next limitToLast records', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [ {
+  const EXPECTED = [{
     id: 'foo',
     photoURL: 'foo.jpg',
     username: 'bar',
@@ -593,7 +594,7 @@ test('should request for the next limitToLast records', function(assert) {
     id: 'hello',
     photoURL: 'hello.jpg',
     username: 'world',
-  } ];
+  }];
   let service = this.subject({
     store: { findRecord: findRecordStub },
     firebase: this.ref,
