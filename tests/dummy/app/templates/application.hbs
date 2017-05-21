@@ -1,5 +1,57 @@
-{{!-- The following component displays Ember's default welcome message. --}}
-{{welcome-page}}
-{{!-- Feel free to remove this! --}}
+<main>
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Message</th>
+      <th>Timestamp</th>
+      <th>Author</th>
+    </tr>
+
+    {{#each posts as |post|}}
+      <tr>
+        <td data-test="post-id">{{post.id}}</td>
+        <td data-test="post-message">{{post.message}}</td>
+        <td data-test="post-timestamp">{{post.timestamp}}</td>
+        <td data-test="post-author">{{post.author.name}}</td>
+      </tr>
+    {{/each}}
+  </table>
+
+  <button
+      data-test="create-record-button"
+      onclick={{action handleCreateRecordClick}}>
+    Create Record
+  </button>
+
+  <button
+      data-test="update-record-button"
+      onclick={{action handleUpdateRecordClick}}>
+    Update Record
+  </button>
+
+  <button
+      data-test="find-record-button"
+      onclick={{action handleFindRecordClick}}>
+    Find Record
+  </button>
+
+  <button
+      data-test="find-all-button"
+      onclick={{action handleFindAllClick}}>
+    Find All
+  </button>
+
+  <button
+      data-test="delete-record-button"
+      onclick={{action handleDeleteRecordClick}}>
+    Delete Record
+  </button>
+
+  <button
+      data-test="reset-record-button"
+      onclick={{action handleResetRecordsClick}}>
+    Reset Records
+  </button>
+</main>
 
 {{outlet}}
