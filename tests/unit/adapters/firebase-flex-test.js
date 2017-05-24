@@ -74,7 +74,7 @@ test('should update Firebase when creating a record', async function(assert) {
   }));
 });
 
-test('should push realtime changes of created record to store', async function(assert) {
+test('should push realtime changes to store after creating a record', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -126,7 +126,7 @@ test('should track Firebase listeners when creating a record', async function(as
   assert.deepEqual(result, { '/posts/post_c': { value: true } });
 });
 
-test('should not duplicate pushing realtime changes of created record to store', async function(assert) {
+test('should not duplicate pushing realtime changes to store after creating a record', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -153,7 +153,7 @@ test('should not duplicate pushing realtime changes of created record to store',
   assert.ok(stub.notCalled);
 });
 
-test('should unload created record when it gets deleted from the backend when creating record', async function(assert) {
+test('should unload record when it gets deleted from the backend after creating a record', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -261,7 +261,7 @@ test('should error when finding a record that does not exist', async function(as
   }
 });
 
-test('should push realtime changes to fetched record when finding a record', async function(assert) {
+test('should push realtime changes to store after finding a record', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -300,7 +300,7 @@ test('should track Firebase listeners when finding record', async function(asser
   assert.deepEqual(result, { '/posts/post_a': { value: true } });
 });
 
-test('should not duplicate pushing realtime changes of fetched record to store when finding record', async function(assert) {
+test('should not duplicate pushing realtime changes to store after finding a record', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -320,7 +320,7 @@ test('should not duplicate pushing realtime changes of fetched record to store w
   assert.ok(stub.notCalled);
 });
 
-test('should unload fetched record when it gets deleted from the backend when finding record', async function(assert) {
+test('should unload record when it gets deleted from the backend after finding record', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -371,7 +371,7 @@ test('should return all records for a model when finding all', async function(as
   }]);
 });
 
-test('should error when finding all records but nothing exists', async function(assert) {
+test('should error when finding all records for a model but nothing exists', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -388,7 +388,7 @@ test('should error when finding all records but nothing exists', async function(
   }
 });
 
-test('should push realtime changes to fetched records when finding all', async function(assert) {
+test('should push realtime changes to store when finding all records for a model', async function(assert) {
   assert.expect(2);
 
   // Arrange
@@ -406,7 +406,7 @@ test('should push realtime changes to fetched records when finding all', async f
   assert.ok(stub.calledWithExactly('foo'));
 });
 
-test('should track Firebase listeners when finding all', async function(assert) {
+test('should track Firebase listeners when finding all records for a model', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -428,7 +428,7 @@ test('should track Firebase listeners when finding all', async function(assert) 
   });
 });
 
-test('should not duplicate pushing realtime changes of fetched record to store when finding all', async function(assert) {
+test('should not duplicate pushing realtime changes to store after finding all records for a model', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -449,7 +449,7 @@ test('should not duplicate pushing realtime changes of fetched record to store w
   assert.ok(stub.notCalled);
 });
 
-test('should unload fetched record when it gets deleted from the backend when finding all', async function(assert) {
+test('should unload record when it gets deleted from the backend after finding all records for a model', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -472,7 +472,7 @@ test('should unload fetched record when it gets deleted from the backend when fi
   assert.ok(stub.calledWithExactly('foo'));
 });
 
-test('should push realtime child_added changes to store when finding all', async function(assert) {
+test('should push realtime child_added changes to store after finding all records for a model', async function(assert) {
   assert.expect(2);
 
   // Arrange
@@ -495,7 +495,7 @@ test('should push realtime child_added changes to store when finding all', async
   assert.ok(stub.calledWithExactly('foo'));
 });
 
-test('should remove record from Firebase when deleting record', async function(assert) {
+test('should remove record from Firebase when deleting a record', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -524,7 +524,7 @@ test('should remove record from Firebase when deleting record', async function(a
   }));
 });
 
-test('should return a record when querying record with equalTo', async function(assert) {
+test('should return a single record when querying for just one with equalTo', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -549,7 +549,7 @@ test('should return a record when querying record with equalTo', async function(
   });
 });
 
-test('should return a record when querying record with startAt', async function(assert) {
+test('should return a single record when querying for just one with startAt', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -574,7 +574,7 @@ test('should return a record when querying record with startAt', async function(
   });
 });
 
-test('should return a record when querying record with endAt', async function(assert) {
+test('should return a single record when querying for just one with endAt', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -599,7 +599,7 @@ test('should return a record when querying record with endAt', async function(as
   });
 });
 
-test('should return a record when querying record even with limitToFirst > 1', async function(assert) {
+test('should return a single record when querying for just one even with limitToFirst > 1', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -624,7 +624,7 @@ test('should return a record when querying record even with limitToFirst > 1', a
   });
 });
 
-test('should return a record when querying record even with limitToLast > 1', async function(assert) {
+test('should return a single record when querying for just one even with limitToFirst > 1', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -649,7 +649,7 @@ test('should return a record when querying record even with limitToLast > 1', as
   });
 });
 
-test('should return a record when querying record with path', async function(assert) {
+test('should return a single record when querying for just one with a path', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -674,7 +674,7 @@ test('should return a record when querying record with path', async function(ass
   });
 });
 
-test('should return an empty record when query record does not exist', async function(assert) {
+test('should return nothing when query for just one record that does not exist', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -693,7 +693,7 @@ test('should return an empty record when query record does not exist', async fun
   assert.deepEqual(result, undefined);
 });
 
-test('should push realtime changes to fetched records when querying', async function(assert) {
+test('should push realtime changes to store after querying for just one record', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -710,7 +710,7 @@ test('should push realtime changes to fetched records when querying', async func
   assert.ok(stub.calledWithExactly('foo'));
 });
 
-test('should track Firebase listeners when querying', async function(assert) {
+test('should track Firebase listeners when querying for just one record', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -728,7 +728,7 @@ test('should track Firebase listeners when querying', async function(assert) {
   assert.deepEqual(result, { '/posts/post_a': { value: true } });
 });
 
-test('should not duplicate pushing realtime changes of fetched record to store when querying', async function(assert) {
+test('should not duplicate pushing realtime changes when querying for just one record', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -746,7 +746,7 @@ test('should not duplicate pushing realtime changes of fetched record to store w
   assert.ok(stub.notCalled);
 });
 
-test('should unload fetched record when it gets deleted from the backend when querying', async function(assert) {
+test('should unload record when it gets deleted from the backend after querying for just one record', async function(assert) {
   assert.expect(1);
 
   // Arrange
