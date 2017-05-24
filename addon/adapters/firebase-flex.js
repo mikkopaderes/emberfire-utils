@@ -80,10 +80,9 @@ export default Adapter.extend({
       const ref = this._getFirebaseReference(modelName, id);
       const onValue = bind(this, (snapshot) => {
         if (snapshot.exists()) {
-          resolve(this._getGetSnapshotWithId(snapshot));
-
           this._setupValueListener(store, modelName, id);
           ref.off('value', onValue);
+          resolve(this._getGetSnapshotWithId(snapshot));
         } else {
           reject();
         }
@@ -112,10 +111,9 @@ export default Adapter.extend({
             records.push(this._getGetSnapshotWithId(child));
           });
 
-          resolve(records);
-
           this._setupListListener(store, modelName);
           ref.off('value');
+          resolve(records);
         } else {
           reject();
         }
