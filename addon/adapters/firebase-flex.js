@@ -1,5 +1,6 @@
 /** @module emberfire-utils */
 import { pluralize } from 'ember-inflector';
+import { assign } from 'ember-platform';
 import { bind } from 'ember-runloop';
 import Adapter from 'ember-data/adapter';
 import RSVP from 'rsvp';
@@ -55,7 +56,7 @@ export default Adapter.extend({
     return new RSVP.Promise(bind(this, (resolve, reject) => {
       const serializedSnapshot = this.serialize(snapshot);
       const serializedInclude = this._serializeInclude(snapshot);
-      const fanout = Object.assign({}, serializedSnapshot, serializedInclude);
+      const fanout = assign({}, serializedSnapshot, serializedInclude);
 
       this.get('firebase').update(fanout, bind(this, (error) => {
         if (error) {
@@ -139,7 +140,7 @@ export default Adapter.extend({
       let fanout = {};
 
       fanout[path] = null;
-      fanout = Object.assign({}, fanout, serializedInclude);
+      fanout = assign({}, fanout, serializedInclude);
 
       this.get('firebase').update(fanout, bind(this, (error) => {
         if (error) {
@@ -367,7 +368,7 @@ export default Adapter.extend({
    * @private
    */
   _getGetSnapshotWithId(snapshot) {
-    return Object.assign({}, { id: snapshot.key }, snapshot.val());
+    return assign({}, { id: snapshot.key }, snapshot.val());
   },
 
   /**
@@ -415,7 +416,7 @@ export default Adapter.extend({
    */
   _trackListener(key, type) {
     const trackedListeners = this.get('trackedListeners');
-    const tempTrackedListeners = Object.assign({}, trackedListeners);
+    const tempTrackedListeners = assign({}, trackedListeners);
 
     if (!tempTrackedListeners.hasOwnProperty(key)) {
       tempTrackedListeners[key] = {};
@@ -423,7 +424,7 @@ export default Adapter.extend({
 
     tempTrackedListeners[key][type] = true;
 
-    this.set('trackedListeners', Object.assign(
+    this.set('trackedListeners', assign(
         {}, trackedListeners, tempTrackedListeners));
   },
 });
