@@ -1,6 +1,12 @@
+/** @module emberfire-utils */
 import { pluralize } from 'ember-inflector';
 import JSONSerializer from 'ember-data/serializers/json';
 
+/**
+ * @class FirebaseFlex
+ * @namespace Serializer
+ * @extends DS.JSONSerializer
+ */
 export default JSONSerializer.extend({
   /**
    * @param {DS.Snapshot} snapshot

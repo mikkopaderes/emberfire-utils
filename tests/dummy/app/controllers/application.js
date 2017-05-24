@@ -63,6 +63,31 @@ export default Controller.extend({
     this._updatePosts();
   },
 
+  async handleQueryRecordWithPathClick() {
+    const store = this.get('store');
+
+    await store.queryRecord('post', {
+      firebase: {
+        path: 'userFeeds/user_a',
+        startsWith: 'post_',
+      },
+    });
+
+    this._updatePosts();
+  },
+
+  async handleQueryRecordWithoutPathClick() {
+    const store = this.get('store');
+
+    await store.queryRecord('post', {
+      firebase: {
+        startsWith: 'post_',
+      },
+    });
+
+    this._updatePosts();
+  },
+
   async handleResetRecordsClick() {
     const fanout = {
       comments: {

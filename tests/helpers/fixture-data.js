@@ -33,6 +33,12 @@ export default function getFixtureData() {
         author: 'user_a',
       },
     },
+    userFeeds: {
+      user_a: {
+        post_a: true,
+        post_b: true,
+      },
+    },
     userPosts: {
       user_a: {
         post_a: true,

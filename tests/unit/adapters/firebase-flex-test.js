@@ -150,7 +150,7 @@ test('should not duplicate pushing realtime changes of created record to store',
   });
 
   // Assert
-  assert.notOk(stub.called);
+  assert.ok(stub.notCalled);
 });
 
 test('should unload created record when it gets deleted from the backend when creating record', async function(assert) {
@@ -317,7 +317,7 @@ test('should not duplicate pushing realtime changes of fetched record to store w
   }, 'post_a');
 
   // Arrange
-  assert.notOk(stub.called);
+  assert.ok(stub.notCalled);
 });
 
 test('should unload fetched record when it gets deleted from the backend when finding record', async function(assert) {
@@ -446,7 +446,7 @@ test('should not duplicate pushing realtime changes of fetched record to store w
   await adapter.findAll(store, { modelName: 'post' });
 
   // Arrange
-  assert.notOk(stub.called);
+  assert.ok(stub.notCalled);
 });
 
 test('should unload fetched record when it gets deleted from the backend when finding all', async function(assert) {
@@ -522,4 +522,249 @@ test('should remove record from Firebase when deleting record', async function(a
     '/posts/post_a': null,
     '/users/user_a': null,
   }));
+});
+
+test('should return a record when querying record with equalTo', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
+    firebase: {
+      equalTo: 'post_a',
+    },
+  });
+
+  // Assert
+  assert.deepEqual(result, {
+    id: 'post_a',
+    message: 'Post A',
+    timestamp: 12345,
+    author: 'user_a',
+  });
+});
+
+test('should return a record when querying record with startAt', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
+    firebase: {
+      startAt: 'post',
+    },
+  });
+
+  // Assert
+  assert.deepEqual(result, {
+    id: 'post_a',
+    message: 'Post A',
+    timestamp: 12345,
+    author: 'user_a',
+  });
+});
+
+test('should return a record when querying record with endAt', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
+    firebase: {
+      endAt: 'post_a',
+    },
+  });
+
+  // Assert
+  assert.deepEqual(result, {
+    id: 'post_a',
+    message: 'Post A',
+    timestamp: 12345,
+    author: 'user_a',
+  });
+});
+
+test('should return a record when querying record even with limitToFirst > 1', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
+    firebase: {
+      limitToFirst: 10,
+    },
+  });
+
+  // Assert
+  assert.deepEqual(result, {
+    id: 'post_a',
+    message: 'Post A',
+    timestamp: 12345,
+    author: 'user_a',
+  });
+});
+
+test('should return a record when querying record even with limitToLast > 1', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
+    firebase: {
+      limitToLast: 10,
+    },
+  });
+
+  // Assert
+  assert.deepEqual(result, {
+    id: 'post_b',
+    message: 'Post B',
+    timestamp: 12345,
+    author: 'user_a',
+  });
+});
+
+test('should return a record when querying record with path', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
+    firebase: {
+      path: '/userFeeds/user_a',
+    },
+  });
+
+  // Assert
+  assert.deepEqual(result, {
+    id: 'post_a',
+    message: 'Post A',
+    timestamp: 12345,
+    author: 'user_a',
+  });
+});
+
+test('should return an empty record when query record does not exist', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  const result = await adapter.queryRecord({}, { modelName: 'post' }, {
+    firebase: {
+      equalTo: 'foo',
+    },
+  });
+
+  // Assert
+  assert.deepEqual(result, undefined);
+});
+
+test('should push realtime changes to fetched records when querying', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const stub = sinon.stub();
+  const store = { normalize: sinon.stub().returns('foo'), push: stub };
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  await adapter.queryRecord(store, { modelName: 'post' });
+
+  // Arrange
+  assert.ok(stub.calledWithExactly('foo'));
+});
+
+test('should track Firebase listeners when querying', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const stub = sinon.stub();
+  const store = { normalize: sinon.stub().returns('foo'), push: stub };
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  await adapter.queryRecord(store, { modelName: 'post' });
+  const result = adapter.get('trackedListeners');
+
+  // Arrange
+  assert.deepEqual(result, { '/posts/post_a': { value: true } });
+});
+
+test('should not duplicate pushing realtime changes of fetched record to store when querying', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const stub = sinon.stub();
+  const store = { normalize: sinon.stub().returns('foo'), push: stub };
+  const adapter = this.subject({
+    firebase: this.ref,
+    trackedListeners: { '/posts/post_a': { value: true } },
+  });
+
+  // Act
+  await adapter.queryRecord(store, { modelName: 'post' }, {});
+
+  // Arrange
+  assert.ok(stub.notCalled);
+});
+
+test('should unload fetched record when it gets deleted from the backend when querying', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const stub = sinon.stub();
+  const store = {
+    normalize: sinon.stub().returns('foo'),
+    peekRecord: sinon.stub().returns('foo'),
+    push: sinon.stub(),
+    unloadRecord: stub,
+  };
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  await adapter.queryRecord(store, { modelName: 'post' }, {});
+  await this.ref.child('/posts/post_a').remove();
+
+  // Arrange
+  assert.ok(stub.calledWithExactly('foo'));
 });
