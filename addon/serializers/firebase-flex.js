@@ -1,13 +1,13 @@
 /** @module emberfire-utils */
 import { pluralize } from 'ember-inflector';
-import JSONSerializer from 'ember-data/serializers/json';
+import EmberFireSerializer from 'emberfire/serializers/firebase';
 
 /**
  * @class FirebaseFlex
  * @namespace Serializer
  * @extends DS.JSONSerializer
  */
-export default JSONSerializer.extend({
+export default EmberFireSerializer.extend({
   /**
    * @param {DS.Snapshot} snapshot
    * @return {Object} Fanout object for Firebase

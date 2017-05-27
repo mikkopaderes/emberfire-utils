@@ -1,6 +1,8 @@
 import Controller from 'ember-controller';
 import inject from 'ember-service/inject';
 
+import firebase from 'firebase';
+
 export default Controller.extend({
   firebase: inject(),
   posts: null,
@@ -12,7 +14,7 @@ export default Controller.extend({
 
     const newPost = store.createRecord('post', {
       message: 'Foo',
-      timestamp: 12345,
+      timestamp: firebase.database.ServerValue.TIMESTAMP,
       author: user,
     });
 
@@ -116,12 +118,12 @@ export default Controller.extend({
       comments: {
         comment_a: {
           message: 'Comment A',
-          timestamp: 12345,
+          timestamp: new Date().getTime(),
           author: 'user_b',
         },
         comment_b: {
           message: 'Comment B',
-          timestamp: 12345,
+          timestamp: new Date().getTime(),
           author: 'user_b',
         },
       },
@@ -134,12 +136,12 @@ export default Controller.extend({
       posts: {
         post_a: {
           message: 'Post A',
-          timestamp: 12345,
+          timestamp: new Date().getTime(),
           author: 'user_a',
         },
         post_b: {
           message: 'Post B',
-          timestamp: 12345,
+          timestamp: new Date().getTime(),
           author: 'user_a',
         },
       },
