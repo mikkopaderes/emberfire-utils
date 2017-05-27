@@ -40,7 +40,26 @@ test('should generate ID for record', function(assert) {
   assert.ok(result);
 });
 
-test('should update Firebase when creating a record', async function(assert) {
+moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | createRecord', {
+  needs: [ 'service:firebase' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(getFixtureData());
+    this.store = {
+      normalize() {},
+      push() {},
+    };
+    this.type = { modelName: 'post' };
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should update Firebase', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -48,7 +67,6 @@ test('should update Firebase when creating a record', async function(assert) {
     '/posts/post_c/message': 'Message',
     '/posts/post_c/timestamp': 12345,
   };
-  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
   const spy = sinon.spy(this.ref, 'update');
   const adapter = this.subject({
     firebase: this.ref,
@@ -56,7 +74,7 @@ test('should update Firebase when creating a record', async function(assert) {
   });
 
   // Act
-  await adapter.updateRecord(store, { modelName: 'post' }, {
+  await adapter.updateRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
     timestamp: 12345,
@@ -77,7 +95,7 @@ test('should update Firebase when creating a record', async function(assert) {
   }));
 });
 
-test('should push realtime changes to store after creating a record', async function(assert) {
+test('should push realtime changes to store', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -85,25 +103,24 @@ test('should push realtime changes to store after creating a record', async func
     '/posts/post_c/message': 'Message',
     '/posts/post_c/timestamp': 12345,
   };
-  const stub = sinon.stub();
-  const store = { normalize: sinon.stub().returns('foo'), push: stub };
+  const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
     firebase: this.ref,
     serialize: sinon.stub().returns(serializedSnapshot),
   });
 
   // Act
-  await adapter.createRecord(store, { modelName: 'post' }, {
+  await adapter.createRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
     timestamp: 12345,
   });
 
   // Assert
-  assert.ok(stub.calledWithExactly('foo'));
+  assert.ok(spy.calledOnce);
 });
 
-test('should track Firebase listeners when creating a record', async function(assert) {
+test('should track Firebase listeners', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -111,14 +128,13 @@ test('should track Firebase listeners when creating a record', async function(as
     '/posts/post_c/message': 'Message',
     '/posts/post_c/timestamp': 12345,
   };
-  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
   const adapter = this.subject({
     firebase: this.ref,
     serialize: sinon.stub().returns(serializedSnapshot),
   });
 
   // Act
-  await adapter.createRecord(store, { modelName: 'post' }, {
+  await adapter.createRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
     timestamp: 12345,
@@ -129,7 +145,7 @@ test('should track Firebase listeners when creating a record', async function(as
   assert.deepEqual(result, { '/posts/post_c': { value: true } });
 });
 
-test('should not duplicate pushing realtime changes to store after creating a record', async function(assert) {
+test('should not duplicate pushing realtime changes to store', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -137,8 +153,7 @@ test('should not duplicate pushing realtime changes to store after creating a re
     '/posts/post_c/message': 'Message',
     '/posts/post_c/timestamp': 12345,
   };
-  const stub = sinon.stub();
-  const store = { normalize: sinon.stub().returns('foo'), push: stub };
+  const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
     firebase: this.ref,
     trackedListeners: { '/posts/post_c': { value: true } },
@@ -146,17 +161,17 @@ test('should not duplicate pushing realtime changes to store after creating a re
   });
 
   // Act
-  await adapter.createRecord(store, { modelName: 'post' }, {
+  await adapter.createRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
     timestamp: 12345,
   });
 
   // Assert
-  assert.ok(stub.notCalled);
+  assert.ok(spy.notCalled);
 });
 
-test('should unload record when it gets deleted from the backend after creating a record', async function(assert) {
+test('should unload record when it gets deleted from the backend', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -166,19 +181,21 @@ test('should unload record when it gets deleted from the backend after creating 
     '/posts/post_c/timestamp': 12345,
   };
   const stub = sinon.stub();
-  const store = {
+
+  this.store = {
     normalize: sinon.stub().returns('foo'),
     peekRecord: sinon.stub().returns(record),
     push: sinon.stub(),
     unloadRecord: stub,
   };
+
   const adapter = this.subject({
     firebase: this.ref,
     serialize: sinon.stub().returns(serializedSnapshot),
   });
 
   // Act
-  await adapter.createRecord(store, { modelName: 'post' }, {
+  await adapter.createRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
     timestamp: 12345,
