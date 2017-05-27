@@ -225,19 +225,35 @@ test('should update Firebase when updating a record', async function(assert) {
   }));
 });
 
-test('should return record when finding a record', async function(assert) {
+moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | findRecord', {
+  needs: [ 'service:firebase' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(getFixtureData());
+    this.store = {
+      normalize() {},
+      push() {},
+    };
+    this.type = { modelName: 'post' };
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should return fetched record', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
   const adapter = this.subject({
     firebase: this.ref,
   });
 
   // Act
-  const result = await adapter.findRecord(store, {
-    modelName: 'post',
-  }, 'post_a');
+  const result = await adapter.findRecord(this.store, this.type, 'post_a');
 
   // Arrange
   assert.deepEqual(result, {
@@ -248,7 +264,7 @@ test('should return record when finding a record', async function(assert) {
   });
 });
 
-test('should error when finding a record that does not exist', async function(assert) {
+test('should error when record does not exist', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -258,92 +274,82 @@ test('should error when finding a record that does not exist', async function(as
 
   // Act
   try {
-    await adapter.findRecord({}, { modelName: 'post' }, 'post_z');
+    await adapter.findRecord(this.store, this.type, 'post_z');
   } catch(e) {
     // Assert
     assert.ok(true);
   }
 });
 
-test('should push realtime changes to store after finding a record', async function(assert) {
+test('should push realtime changes to store', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const stub = sinon.stub();
-  const store = { normalize: sinon.stub().returns('foo'), push: stub };
+  const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
     firebase: this.ref,
   });
 
   // Act
-  await adapter.findRecord(store, {
-    modelName: 'post',
-  }, 'post_a');
+  await adapter.findRecord(this.store, this.type, 'post_a');
 
   // Arrange
-  assert.ok(stub.calledWithExactly('foo'));
+  assert.ok(spy.calledOnce);
 });
 
-test('should track Firebase listeners when finding record', async function(assert) {
+test('should track Firebase listeners', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const stub = sinon.stub();
-  const store = { normalize: sinon.stub().returns('foo'), push: stub };
   const adapter = this.subject({
     firebase: this.ref,
   });
 
   // Act
-  await adapter.findRecord(store, {
-    modelName: 'post',
-  }, 'post_a');
+  await adapter.findRecord(this.store, this.type, 'post_a');
   const result = adapter.get('trackedListeners');
 
   // Arrange
   assert.deepEqual(result, { '/posts/post_a': { value: true } });
 });
 
-test('should not duplicate pushing realtime changes to store after finding a record', async function(assert) {
+test('should not duplicate pushing realtime changes to store', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const stub = sinon.stub();
-  const store = { normalize: sinon.stub().returns('foo'), push: stub };
+  const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
     firebase: this.ref,
     trackedListeners: { '/posts/post_a': { value: true } },
   });
 
   // Act
-  await adapter.findRecord(store, {
-    modelName: 'post',
-  }, 'post_a');
+  await adapter.findRecord(this.store, this.type, 'post_a');
 
   // Arrange
-  assert.ok(stub.notCalled);
+  assert.ok(spy.notCalled);
 });
 
-test('should unload record when it gets deleted from the backend after finding record', async function(assert) {
+test('should unload record when it gets deleted from the backend', async function(assert) {
   assert.expect(1);
 
   // Arrange
   const record = EmberObject.create({ isSaving: false });
   const stub = sinon.stub();
-  const store = {
+
+  this.store = {
     normalize: sinon.stub().returns('foo'),
     peekRecord: sinon.stub().returns(record),
     push: sinon.stub(),
     unloadRecord: stub,
   };
+
   const adapter = this.subject({
     firebase: this.ref,
   });
 
   // Act
-  await adapter.findRecord(store, {
-    modelName: 'post',
-  }, 'post_a');
+  await adapter.findRecord(this.store, this.type, 'post_a');
   await this.ref.child('/posts/post_a').remove();
 
   // Arrange
