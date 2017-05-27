@@ -109,17 +109,20 @@ export default Adapter.extend({
       const ref = this._getFirebaseReference(modelName);
 
       ref.on('value', bind(this, (snapshot) => {
-        if (snapshot.exists()) {
-          const records = [];
+        const findRecordPromises = [];
 
+        if (snapshot.exists()) {
           snapshot.forEach((child) => {
-            this._setupValueListener(store, modelName, child.key);
-            records.push(this._getGetSnapshotWithId(child));
+            findRecordPromises.push(this.findRecord(store, type, child.key));
           });
 
-          this._setupListListener(store, modelName);
-          ref.off('value');
-          resolve(records);
+          RSVP.all(findRecordPromises).then(bind(this, (records) => {
+            this._setupListListener(store, modelName);
+            ref.off('value');
+            resolve(records);
+          })).catch(bind(this, (error) => {
+            reject(error);
+          }));
         } else {
           reject();
         }
