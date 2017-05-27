@@ -12,7 +12,7 @@ import getFixtureData from 'dummy/tests/helpers/fixture-data';
 import stubPromise from 'dummy/tests/helpers/stub-promise';
 
 moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex', {
-  needs: [ 'service:firebase', 'service:firebase-flex' ],
+  needs: [ 'service:firebase' ],
 
   beforeEach() {
     stubFirebase();
@@ -777,7 +777,7 @@ test('should unload record when it gets deleted from the backend after querying 
 });
 
 moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | query', {
-  needs: [ 'service:firebase', 'service:firebase-flex' ],
+  needs: [ 'service:firebase' ],
 
   beforeEach() {
     stubFirebase();

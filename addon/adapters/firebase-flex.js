@@ -22,13 +22,6 @@ export default Adapter.extend({
   firebase: inject(),
 
   /**
-   * @type {Ember.Service}
-   * @default
-   * @readonly
-   */
-  firebaseFlex: inject(),
-
-  /**
    * @type {Object}
    * @default
    */
