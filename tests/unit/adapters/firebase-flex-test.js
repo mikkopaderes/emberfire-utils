@@ -530,250 +530,148 @@ test('should remove record from Firebase when deleting a record', async function
   }));
 });
 
-test('should return a single record when querying for just one with equalTo', async function(assert) {
+moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | queryRecord', {
+  needs: [ 'service:firebase' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(getFixtureData());
+    this.store = {};
+    this.type = { modelName: 'post' };
+    this.post = { id: 'post_a' };
+    this.findRecord = sinon.stub().returns(stubPromise(true, this.post));
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should return a single record that matches the equalTo query params', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
   const adapter = this.subject({
     firebase: this.ref,
+    findRecord: this.findRecord,
   });
 
   // Act
-  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
-    firebase: {
-      equalTo: 'post_a',
-    },
+  const result = await adapter.queryRecord(this.store, this.type, {
+    equalTo: 'post_a',
   });
 
   // Assert
-  assert.deepEqual(result, {
-    id: 'post_a',
-    message: 'Post A',
-    timestamp: 12345,
-    author: 'user_a',
-  });
+  assert.deepEqual(result, this.post);
 });
 
-test('should return a single record when querying for just one with startAt', async function(assert) {
+test('should return a single record that matches the startAt query params', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
   const adapter = this.subject({
     firebase: this.ref,
+    findRecord: this.findRecord,
   });
 
   // Act
-  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
-    firebase: {
-      startAt: 'post',
-    },
+  const result = await adapter.queryRecord(this.store, this.type, {
+    startAt: 'post',
   });
 
   // Assert
-  assert.deepEqual(result, {
-    id: 'post_a',
-    message: 'Post A',
-    timestamp: 12345,
-    author: 'user_a',
-  });
+  assert.deepEqual(result, this.post);
 });
 
-test('should return a single record when querying for just one with endAt', async function(assert) {
+test('should return a single record that matches the endAt query params', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
   const adapter = this.subject({
     firebase: this.ref,
+    findRecord: this.findRecord,
   });
 
   // Act
-  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
-    firebase: {
-      endAt: 'post_a',
-    },
+  const result = await adapter.queryRecord(this.store, this.type, {
+    endAt: 'post_a',
   });
 
   // Assert
-  assert.deepEqual(result, {
-    id: 'post_a',
-    message: 'Post A',
-    timestamp: 12345,
-    author: 'user_a',
-  });
+  assert.deepEqual(result, this.post);
 });
 
-test('should return a single record when querying for just one even with limitToFirst > 1', async function(assert) {
+test('should return a single record even if limitToFirst query param is > 1', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
   const adapter = this.subject({
     firebase: this.ref,
+    findRecord: this.findRecord,
   });
 
   // Act
-  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
-    firebase: {
-      limitToFirst: 10,
-    },
+  const result = await adapter.queryRecord(this.store, this.type, {
+    limitToFirst: 10,
   });
 
   // Assert
-  assert.deepEqual(result, {
-    id: 'post_a',
-    message: 'Post A',
-    timestamp: 12345,
-    author: 'user_a',
-  });
+  assert.deepEqual(result, this.post);
 });
 
-test('should return a single record when querying for just one even with limitToFirst > 1', async function(assert) {
+test('should return a single record even if limitToLast query param is > 1', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
   const adapter = this.subject({
     firebase: this.ref,
+    findRecord: this.findRecord,
   });
 
   // Act
-  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
-    firebase: {
-      limitToLast: 10,
-    },
+  const result = await adapter.queryRecord(this.store, this.type, {
+    limitToLast: 10,
   });
 
   // Assert
-  assert.deepEqual(result, {
-    id: 'post_b',
-    message: 'Post B',
-    timestamp: 12345,
-    author: 'user_a',
-  });
+  assert.deepEqual(result, this.post);
 });
 
-test('should return a single record when querying for just one with a path', async function(assert) {
+test('should return a single record that matches the path query params', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const store = { normalize: sinon.stub().returns('foo'), push: sinon.stub() };
   const adapter = this.subject({
     firebase: this.ref,
+    findRecord: this.findRecord,
   });
 
   // Act
-  const result = await adapter.queryRecord(store, { modelName: 'post' }, {
-    firebase: {
-      path: '/userFeeds/user_a',
-    },
+  const result = await adapter.queryRecord(this.store, this.type, {
+    path: '/userFeeds/user_a/',
   });
 
   // Assert
-  assert.deepEqual(result, {
-    id: 'post_a',
-    message: 'Post A',
-    timestamp: 12345,
-    author: 'user_a',
-  });
+  assert.deepEqual(result, this.post);
 });
 
-test('should return nothing when query for just one record that does not exist', async function(assert) {
+test('should return no record when nothing matches the query params', async function(assert) {
   assert.expect(1);
 
   // Arrange
   const adapter = this.subject({
     firebase: this.ref,
+    findRecord: this.findRecord,
   });
 
   // Act
-  const result = await adapter.queryRecord({}, { modelName: 'post' }, {
-    firebase: {
-      equalTo: 'foo',
-    },
+  const result = await adapter.queryRecord(this.store, this.type, {
+    equalTo: 'foo',
   });
 
   // Assert
   assert.deepEqual(result, undefined);
-});
-
-test('should push realtime changes to store after querying for just one record', async function(assert) {
-  assert.expect(1);
-
-  // Arrange
-  const stub = sinon.stub();
-  const store = { normalize: sinon.stub().returns('foo'), push: stub };
-  const adapter = this.subject({
-    firebase: this.ref,
-  });
-
-  // Act
-  await adapter.queryRecord(store, { modelName: 'post' });
-
-  // Arrange
-  assert.ok(stub.calledWithExactly('foo'));
-});
-
-test('should track Firebase listeners when querying for just one record', async function(assert) {
-  assert.expect(1);
-
-  // Arrange
-  const stub = sinon.stub();
-  const store = { normalize: sinon.stub().returns('foo'), push: stub };
-  const adapter = this.subject({
-    firebase: this.ref,
-  });
-
-  // Act
-  await adapter.queryRecord(store, { modelName: 'post' });
-  const result = adapter.get('trackedListeners');
-
-  // Arrange
-  assert.deepEqual(result, { '/posts/post_a': { value: true } });
-});
-
-test('should not duplicate pushing realtime changes when querying for just one record', async function(assert) {
-  assert.expect(1);
-
-  // Arrange
-  const stub = sinon.stub();
-  const store = { normalize: sinon.stub().returns('foo'), push: stub };
-  const adapter = this.subject({
-    firebase: this.ref,
-    trackedListeners: { '/posts/post_a': { value: true } },
-  });
-
-  // Act
-  await adapter.queryRecord(store, { modelName: 'post' }, {});
-
-  // Arrange
-  assert.ok(stub.notCalled);
-});
-
-test('should unload record when it gets deleted from the backend after querying for just one record', async function(assert) {
-  assert.expect(1);
-
-  // Arrange
-  const record = EmberObject.create({ isSaving: false });
-  const stub = sinon.stub();
-  const store = {
-    normalize: sinon.stub().returns('foo'),
-    peekRecord: sinon.stub().returns(record),
-    push: sinon.stub(),
-    unloadRecord: stub,
-  };
-  const adapter = this.subject({
-    firebase: this.ref,
-  });
-
-  // Act
-  await adapter.queryRecord(store, { modelName: 'post' }, {});
-  await this.ref.child('/posts/post_a').remove();
-
-  // Arrange
-  assert.ok(stub.calledWithExactly(record));
 });
 
 moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | query', {

@@ -71,10 +71,8 @@ export default Controller.extend({
     const store = this.get('store');
 
     await store.queryRecord('post', {
-      firebase: {
-        path: 'userFeeds/user_a',
-        startsWith: 'post_',
-      },
+      path: 'userFeeds/user_a',
+      equalTo: 'post_a',
     });
 
     this._updatePosts();
@@ -84,9 +82,7 @@ export default Controller.extend({
     const store = this.get('store');
 
     await store.queryRecord('post', {
-      firebase: {
-        startsWith: 'post_',
-      },
+      equalTo: 'post_a',
     });
 
     this._updatePosts();

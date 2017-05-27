@@ -164,23 +164,31 @@ export default Adapter.extend({
    */
   queryRecord(store, type, query = {}) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
-      if (!query.hasOwnProperty('firebase')) {
-        query.firebase = {};
-      }
+      const onValue = bind(this, (snapshot) => {
+        if (snapshot.exists()) {
+          // Will always loop once because of the forced limitTo* 1
+          snapshot.forEach((child) => {
+            this.findRecord(store, type, child.key).then((record) => {
+              ref.off('value', onValue);
+              resolve(record);
+            }).catch((error) => {
+              reject(error);
+            });
+          });
+        } else {
+          resolve();
+        }
+      });
 
-      if (query.firebase.hasOwnProperty('path')) {
-        this._queryRecordWithPath(store, type, query).then((record) => {
-          resolve(record);
-        }).catch((error) => {
-          reject(error);
-        });
-      } else {
-        this._queryRecordWithoutPath(store, type, query).then((record) => {
-          resolve(record);
-        }).catch((error) => {
-          reject(error);
-        });
-      }
+      let ref = query.path ?
+          this.get('firebase').child(query.path) :
+          this._getFirebaseReference(type.modelName);
+
+      ref = this._setupQuerySortingAndFiltering(ref, query);
+
+      ref.on('value', onValue, bind(this, (error) => {
+        reject(error);
+      }));
     }));
   },
 
@@ -222,72 +230,6 @@ export default Adapter.extend({
           this._getFirebaseReference(modelName);
 
       ref = this._setupQuerySortingAndFiltering(ref, query);
-
-      ref.on('value', onValue, bind(this, (error) => {
-        reject(error);
-      }));
-    }));
-  },
-
-  /**
-   * @param {DS.Store} store
-   * @param {DS.Model} type
-   * @param {Object} query
-   * @return {Promise} Resolves with the queried record
-   */
-  _queryRecordWithPath(store, type, query) {
-    return new RSVP.Promise(bind(this, (resolve, reject) => {
-      let ref = this.get('firebase').child(query.firebase.path);
-
-      ref = this._setupQuerySortingAndFiltering(ref, query.firebase, true);
-
-      ref.once('value').then(bind(this, (snapshot) => {
-        if (snapshot.exists()) {
-          // Will always loop once because of the forced limitTo* 1
-          snapshot.forEach((child) => {
-            this.findRecord(store, type, child.key).then((record) => {
-              resolve(record);
-            }).catch((error) => {
-              reject(error);
-            });
-          });
-        } else {
-          resolve();
-        }
-      }), bind(this, (error) => {
-        reject(error);
-      }));
-    }));
-  },
-
-  /**
-   * @param {DS.Store} store
-   * @param {DS.Model} type
-   * @param {Object} query
-   * @return {Promise} Resolves with the queried record
-   */
-  _queryRecordWithoutPath(store, type, query) {
-    return new RSVP.Promise(bind(this, (resolve, reject) => {
-      const modelName = type.modelName;
-      const onValue = bind(this, (snapshot) => {
-        let record;
-
-        if (snapshot.exists()) {
-          // Will always loop once because of the forced limitTo* 1
-          snapshot.forEach((child) => {
-            this._setupValueListener(store, modelName, child.key);
-            record = this._getGetSnapshotWithId(child);
-          });
-
-          ref.off('value', onValue);
-          resolve(record);
-        } else {
-          resolve(record);
-        }
-      });
-      let ref = this._getFirebaseReference(modelName);
-
-      ref = this._setupQuerySortingAndFiltering(ref, query.firebase, true);
 
       ref.on('value', onValue, bind(this, (error) => {
         reject(error);
