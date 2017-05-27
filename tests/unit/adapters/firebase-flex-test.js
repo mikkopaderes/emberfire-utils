@@ -189,6 +189,22 @@ test('should unload record when it gets deleted from the backend after creating 
   assert.ok(stub.calledWithExactly(record));
 });
 
+moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | updateRecord', {
+  needs: [ 'service:firebase' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(getFixtureData());
+    this.store = {};
+    this.type = {};
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
 test('should update Firebase when updating a record', async function(assert) {
   assert.expect(1);
 
@@ -204,7 +220,7 @@ test('should update Firebase when updating a record', async function(assert) {
   });
 
   // Act
-  await adapter.updateRecord(null, null, {
+  await adapter.updateRecord(this.store, this.type, {
     id: 'post_a',
     message: 'Message',
     timestamp: 12345,
