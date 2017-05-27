@@ -1,4 +1,3 @@
-/* jshint node: true */
 'use strict';
 
 var Funnel = require('broccoli-funnel');
@@ -12,6 +11,9 @@ function filterAssets() {
       assetsToExclude.push('**/has-limited.js');
     } else if (featureToExclude === 'firebase-ui') {
       assetsToExclude.push('**/firebase-ui*.js');
+    } else if (featureToExclude === 'firebase-flex') {
+      assetsToExclude.push('**/firebase-flex.js');
+      assetsToExclude.push('**/has-filtered.js');
     }
   });
 }
