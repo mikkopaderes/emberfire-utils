@@ -21,6 +21,6 @@ test('should update record', function(assert) {
     assert.equal(find(postId).text().trim(), 'post_a');
     assert.equal(find(postMessage).text().trim(), 'Foo');
     assert.equal(find(postTimestamp).text().trim(), '12345');
-    assert.equal(find(postAuthor).text().trim(), 'User A');
+    assert.equal(find(postAuthor).text().trim(), 'User B');
   });
 });

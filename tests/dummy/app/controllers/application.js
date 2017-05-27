@@ -19,8 +19,10 @@ export default Controller.extend({
     this.set('newPost', newPost);
 
     newPost.save({
-      include: {
-        '/posts/$id/author': 'user_a',
+      adapterOptions: {
+        include: {
+          '/posts/$id/author': 'user_a',
+        },
       },
     });
 
@@ -35,8 +37,10 @@ export default Controller.extend({
     post.set('message', 'Foo');
     post.set('author', user);
     post.save({
-      include: {
-        '/posts/post_a/author': user.get('id'),
+      adapterOptions: {
+        include: {
+          '/posts/post_a/author': user.get('id'),
+        },
       },
     });
     this._updatePosts();
@@ -88,6 +92,29 @@ export default Controller.extend({
     this._updatePosts();
   },
 
+  async handleQueryWithPathClick() {
+    const posts = await this.get('store').query('post', {
+      cacheId: 'cache-id',
+      path: '/userFeeds/user_a',
+      limitToFirst: 1,
+    });
+
+    this.set('posts', posts);
+  },
+
+  async handleQueryWithoutPathClick() {
+    const posts = await this.get('store').query('post', {
+      cacheId: 'cache-id',
+      limitToFirst: 1,
+    });
+
+    this.set('posts', posts);
+  },
+
+  async handleLoadMoreQueryRecordsClick() {
+    this.get('posts.firebase').next(1);
+  },
+
   async handleResetRecordsClick() {
     const fanout = {
       comments: {
@@ -114,10 +141,22 @@ export default Controller.extend({
           timestamp: 12345,
           author: 'user_a',
         },
+        post_b: {
+          message: 'Post B',
+          timestamp: 12345,
+          author: 'user_a',
+        },
+      },
+      userFeeds: {
+        user_a: {
+          post_a: true,
+          post_b: true,
+        },
       },
       userPosts: {
         user_a: {
           post_a: true,
+          post_b: true,
         },
       },
       users: {

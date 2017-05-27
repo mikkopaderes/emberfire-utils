@@ -60,6 +60,24 @@
   </button>
 
   <button
+      data-test="query-with-path-button"
+      onclick={{action handleQueryWithPathClick}}>
+    Query With Path
+  </button>
+
+  <button
+      data-test="query-without-path-button"
+      onclick={{action handleQueryWithoutPathClick}}>
+    Query Without Path
+  </button>
+
+  <button
+      data-test="load-more-query-records-button"
+      onclick={{action handleLoadMoreQueryRecordsClick}}>
+    Load More Query Records
+  </button>
+
+  <button
       data-test="reset-record-button"
       onclick={{action handleResetRecordsClick}}>
     Reset Records

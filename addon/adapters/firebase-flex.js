@@ -22,10 +22,23 @@ export default Adapter.extend({
   firebase: inject(),
 
   /**
+   * @type {Ember.Service}
+   * @default
+   * @readonly
+   */
+  firebaseFlex: inject(),
+
+  /**
    * @type {Object}
    * @default
    */
   trackedListeners: {},
+
+  /**
+   * @type {Object}
+   * @default
+   */
+  trackedQueries: {},
 
   /**
    * @return {string} Push ID
@@ -181,6 +194,51 @@ export default Adapter.extend({
   /**
    * @param {DS.Store} store
    * @param {DS.Model} type
+   * @param {Object} [query={}]
+   * @param {DS.AdapterPopulatedRecordArray} recordArray
+   * @return {Promise} Resolves with the queried record
+   */
+  query(store, type, query = {}, recordArray) {
+    return new RSVP.Promise(bind(this, (resolve, reject) => {
+      const hasCacheId = query.hasOwnProperty('cacheId');
+      const modelName = type.modelName;
+      const onValue = bind(this, (snapshot) => {
+        const findRecordPromises = [];
+
+        if (snapshot.exists()) {
+          snapshot.forEach((child) => {
+            findRecordPromises.push(this.findRecord(store, type, child.key));
+          });
+        }
+
+        RSVP.all(findRecordPromises).then(bind(this, (records) => {
+          if (hasCacheId) {
+            this._setupQueryListListener(store, modelName, recordArray, ref);
+            this._trackQuery(query.cacheId, recordArray);
+          }
+
+          ref.off('value', onValue);
+          resolve(records);
+        })).catch(bind(this, (error) => {
+          reject(error);
+        }));
+      });
+
+      let ref = query.path ?
+          this.get('firebase').child(query.path) :
+          this._getFirebaseReference(modelName);
+
+      ref = this._setupQuerySortingAndFiltering(ref, query);
+
+      ref.on('value', onValue, bind(this, (error) => {
+        reject(error);
+      }));
+    }));
+  },
+
+  /**
+   * @param {DS.Store} store
+   * @param {DS.Model} type
    * @param {Object} query
    * @return {Promise} Resolves with the queried record
    */
@@ -250,16 +308,20 @@ export default Adapter.extend({
    * @private
    */
   _serializeInclude(snapshot) {
-    let newInclude = {};
+    const newInclude = {};
 
-    if (snapshot.hasOwnProperty('firebase')) {
-      const include = snapshot.firebase.include;
+    if (snapshot.hasOwnProperty('adapterOptions')) {
+      const adapterOptions = snapshot.adapterOptions;
 
-      for (let key in include) {
-        if (Object.prototype.hasOwnProperty.call(include, key)) {
-          const newKey = key.replace('$id', snapshot.id);
+      if (adapterOptions && adapterOptions.hasOwnProperty('include')) {
+        const include = adapterOptions.include;
 
-          newInclude[newKey] = include[key];
+        for (let key in include) {
+          if (Object.prototype.hasOwnProperty.call(include, key)) {
+            const newKey = key.replace('$id', snapshot.id);
+
+            newInclude[newKey] = include[key];
+          }
         }
       }
     }
@@ -310,6 +372,71 @@ export default Adapter.extend({
         this._setupValueListener(store, modelName, snapshot.key);
       });
     }
+  },
+
+  /**
+   * @param {DS.Store} store
+   * @param {string} modelName
+   * @param {DS.AdapterPopulatedRecordArray} recordArray
+   * @param {firebase.database.DataSnapshot} ref
+   * @private
+   */
+  _setupQueryListListener(store, modelName, recordArray, ref) {
+    const onChildAdded = bind(this, (snapshot) => {
+      store.findRecord(modelName, snapshot.key).then((record) => {
+        // We're using a private API here and will likely break
+        // without warning. We need to make sure that our acceptance
+        // tests will capture this even if indirectly.
+        recordArray.get('content').addObject(record._internalModel);
+      });
+    });
+
+    ref.on('child_added', onChildAdded);
+
+    const onChildRemoved = bind(this, (snapshot) => {
+      const record = recordArray.get('content').findBy('id', snapshot.key);
+
+      if (record) {
+        recordArray.get('content').removeObject(record);
+      }
+    });
+
+    ref.on('child_removed', onChildRemoved);
+
+    this._setupRecordExtensions(recordArray, ref, onChildAdded, onChildRemoved);
+  },
+
+  /**
+   * @param {DS.AdapterPopulatedRecordArray} recordArray
+   * @param {firebase.database.DataSnapshot} ref
+   * @param {function} onChildAdded
+   * @param {function} onChildRemoved
+   * @private
+   */
+  _setupRecordExtensions(recordArray, ref, onChildAdded, onChildRemoved) {
+    recordArray.set('firebase', {
+      next(numberOfRecords) {
+        ref.off('child_added', onChildAdded);
+        ref.off('child_removed', onChildRemoved);
+
+        const query = recordArray.get('query');
+
+        if (query.hasOwnProperty('limitToFirst')) {
+          query.limitToFirst += numberOfRecords;
+        }
+
+        if (query.hasOwnProperty('limitToLast')) {
+          query.limitToLast += numberOfRecords;
+        }
+
+        return recordArray.update();
+      },
+
+      off() {
+        ref.off('child_added', onChildAdded);
+        ref.off('child_removed', onChildRemoved);
+      },
+    });
   },
 
   /**
@@ -390,7 +517,7 @@ export default Adapter.extend({
   _unloadRecord(store, modelName, id) {
     const record = store.peekRecord(modelName, id);
 
-    if (record && !record.isSaving) {
+    if (record && !record.get('isSaving')) {
       store.unloadRecord(record);
     }
   },
@@ -424,5 +551,25 @@ export default Adapter.extend({
 
     this.set('trackedListeners', assign(
         {}, trackedListeners, tempTrackedListeners));
+  },
+
+  /**
+   * @param {string} cacheId
+   * @param {DS.AdapterPopulatedRecordArray} recordArray
+   * @private
+   */
+  _trackQuery(cacheId, recordArray) {
+    const trackedQueries = this.get('trackedQueries');
+    const trackedQueryCache = trackedQueries[cacheId];
+
+    if (trackedQueryCache) {
+      trackedQueryCache.get('firebase').off();
+    }
+
+    const trackedQuery = {};
+
+    trackedQuery[cacheId] = recordArray;
+
+    this.set('trackedQueries', assign({}, trackedQueries, trackedQuery));
   },
 });

@@ -1,4 +1,6 @@
+import { A } from 'ember-array/utils';
 import { moduleFor, test } from 'ember-qunit';
+import EmberObject from 'ember-object';
 
 import createOfflineRef from 'dummy/tests/helpers/create-offline-ref';
 import destroyFirebaseApps from 'dummy/tests/helpers/destroy-firebase-apps';
@@ -7,9 +9,10 @@ import stubFirebase from 'dummy/tests/helpers/stub-firebase';
 import unStubFirebase from 'dummy/tests/helpers/unstub-firebase';
 
 import getFixtureData from 'dummy/tests/helpers/fixture-data';
+import stubPromise from 'dummy/tests/helpers/stub-promise';
 
 moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex', {
-  needs: [ 'service:firebase' ],
+  needs: [ 'service:firebase', 'service:firebase-flex' ],
 
   beforeEach() {
     stubFirebase();
@@ -57,7 +60,7 @@ test('should update Firebase when creating a record', async function(assert) {
     id: 'post_c',
     message: 'Message',
     timestamp: 12345,
-    firebase: {
+    adapterOptions: {
       include: {
         '/userFeeds/user_a/post_c': true,
         '/userFeeds/user_b/post_c': true,
@@ -157,6 +160,7 @@ test('should unload record when it gets deleted from the backend after creating 
   assert.expect(1);
 
   // Arrange
+  const record = EmberObject.create({ isSaving: false });
   const serializedSnapshot = {
     '/posts/post_c/message': 'Message',
     '/posts/post_c/timestamp': 12345,
@@ -164,7 +168,7 @@ test('should unload record when it gets deleted from the backend after creating 
   const stub = sinon.stub();
   const store = {
     normalize: sinon.stub().returns('foo'),
-    peekRecord: sinon.stub().returns('foo'),
+    peekRecord: sinon.stub().returns(record),
     push: sinon.stub(),
     unloadRecord: stub,
   };
@@ -182,7 +186,7 @@ test('should unload record when it gets deleted from the backend after creating 
   await this.ref.child('/posts/post_c').remove();
 
   // Assert
-  assert.ok(stub.calledWithExactly('foo'));
+  assert.ok(stub.calledWithExactly(record));
 });
 
 test('should update Firebase when updating a record', async function(assert) {
@@ -204,7 +208,7 @@ test('should update Firebase when updating a record', async function(assert) {
     id: 'post_a',
     message: 'Message',
     timestamp: 12345,
-    firebase: {
+    adapterOptions: {
       include: {
         '/userFeeds/user_a/post_a': true,
         '/userFeeds/user_b/post_a': true,
@@ -324,10 +328,11 @@ test('should unload record when it gets deleted from the backend after finding r
   assert.expect(1);
 
   // Arrange
+  const record = EmberObject.create({ isSaving: false });
   const stub = sinon.stub();
   const store = {
     normalize: sinon.stub().returns('foo'),
-    peekRecord: sinon.stub().returns('foo'),
+    peekRecord: sinon.stub().returns(record),
     push: sinon.stub(),
     unloadRecord: stub,
   };
@@ -342,7 +347,7 @@ test('should unload record when it gets deleted from the backend after finding r
   await this.ref.child('/posts/post_a').remove();
 
   // Arrange
-  assert.ok(stub.calledWithExactly('foo'));
+  assert.ok(stub.calledWithExactly(record));
 });
 
 test('should return all records for a model when finding all', async function(assert) {
@@ -453,10 +458,11 @@ test('should unload record when it gets deleted from the backend after finding a
   assert.expect(1);
 
   // Arrange
+  const record = EmberObject.create({ isSaving: false });
   const stub = sinon.stub();
   const store = {
     normalize: sinon.stub().returns('foo'),
-    peekRecord: sinon.stub().returns('foo'),
+    peekRecord: sinon.stub().returns(record),
     push: sinon.stub(),
     unloadRecord: stub,
   };
@@ -469,7 +475,7 @@ test('should unload record when it gets deleted from the backend after finding a
   await this.ref.child('/posts/post_a').remove();
 
   // Arrange
-  assert.ok(stub.calledWithExactly('foo'));
+  assert.ok(stub.calledWithExactly(record));
 });
 
 test('should push realtime child_added changes to store after finding all records for a model', async function(assert) {
@@ -510,7 +516,7 @@ test('should remove record from Firebase when deleting a record', async function
     message: 'Post A',
     timestamp: 12345,
     author: 'user_a',
-    firebase: {
+    adapterOptions: {
       include: {
         '/users/user_a': null,
       },
@@ -750,10 +756,11 @@ test('should unload record when it gets deleted from the backend after querying 
   assert.expect(1);
 
   // Arrange
+  const record = EmberObject.create({ isSaving: false });
   const stub = sinon.stub();
   const store = {
     normalize: sinon.stub().returns('foo'),
-    peekRecord: sinon.stub().returns('foo'),
+    peekRecord: sinon.stub().returns(record),
     push: sinon.stub(),
     unloadRecord: stub,
   };
@@ -766,5 +773,330 @@ test('should unload record when it gets deleted from the backend after querying 
   await this.ref.child('/posts/post_a').remove();
 
   // Arrange
-  assert.ok(stub.calledWithExactly('foo'));
+  assert.ok(stub.calledWithExactly(record));
+});
+
+moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | query', {
+  needs: [ 'service:firebase', 'service:firebase-flex' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(getFixtureData());
+    this.recordArray = EmberObject.create({
+      content: new A(),
+      firebase: {
+        next() {},
+        off() {},
+      },
+      query: {},
+      update() {},
+    });
+    this.type = { modelName: 'post' };
+    this.posts = [{
+      id: 'post_a',
+      _internalModel: { id: 'post_a' },
+    }, {
+      id: 'post_b',
+      _internalModel: { id: 'post_b' },
+    }, {
+      id: 'post_c',
+      _internalModel: { id: 'post_c' },
+    }];
+
+    const storeFindRecordStub = sinon.stub();
+
+    storeFindRecordStub.withArgs('post', 'post_a').returns(stubPromise(
+        true, this.posts[0]));
+    storeFindRecordStub.withArgs('post', 'post_b').returns(stubPromise(
+        true, this.posts[1]));
+    storeFindRecordStub.withArgs('post', 'post_c').returns(stubPromise(
+        true, this.posts[2]));
+
+    this.store = {
+      findRecord: storeFindRecordStub,
+    };
+
+    const adapterFindRecordStub = sinon.stub();
+
+    adapterFindRecordStub.withArgs(this.store, this.type, 'post_a').returns(
+        stubPromise(true, this.posts[0]));
+    adapterFindRecordStub.withArgs(this.store, this.type, 'post_b').returns(
+        stubPromise(true, this.posts[1]));
+    adapterFindRecordStub.withArgs(this.store, this.type, 'post_c').returns(
+        stubPromise(true, this.posts[2]));
+
+    this.adapterFindRecord = adapterFindRecordStub;
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should return records that matches the equalTo query params', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  const result = await adapter.query(this.store, this.type, {
+    equalTo: 'post_a',
+  }, this.recordArray);
+
+  // Assert
+  assert.deepEqual(result, [ this.posts[0] ]);
+});
+
+test('should return records that matches the startAt query params', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  const result = await adapter.query(this.store, this.type, {
+    startAt: 'post',
+  }, this.recordArray);
+
+  // Assert
+  assert.deepEqual(result, [ this.posts[0], this.posts[1] ]);
+});
+
+test('should return records that matches the endAt query params', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  const result = await adapter.query(this.store, this.type, {
+    endAt: 'post_a',
+  }, this.recordArray);
+
+  // Assert
+  assert.deepEqual(result, [ this.posts[0] ]);
+});
+
+test('should return records that matches the limitToFirst query params', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  const result = await adapter.query(this.store, this.type, {
+    limitToFirst: 1,
+  }, this.recordArray);
+
+  // Assert
+  assert.deepEqual(result, [ this.posts[0] ]);
+});
+
+test('should return records that matches the limitToLast query params', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  const result = await adapter.query(this.store, this.type, {
+    limitToLast: 1,
+  }, this.recordArray);
+
+  // Assert
+  assert.deepEqual(result, [ this.posts[1] ]);
+});
+
+test('should return records that matches the path query params', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  const result = await adapter.query(this.store, this.type, {
+    path: '/userFeeds/user_a',
+  }, this.recordArray);
+
+  // Assert
+  assert.deepEqual(result, [ this.posts[0], this.posts[1] ]);
+});
+
+test('should return no records when nothing matches the query params', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  const result = await adapter.query(this.store, this.type, {
+    equalTo: 'foo',
+  }, this.recordArray);
+
+  // Assert
+  assert.deepEqual(result, []);
+});
+
+test('should listen for child_added changes when query params has cacheId', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  await adapter.query(this.store, this.type, {
+    cacheId: 'foo',
+  }, this.recordArray);
+  await this.ref.update({
+    '/posts/post_c': {
+      message: 'Post C',
+      timestamp: 12345,
+      author: 'user_a',
+    },
+  });
+
+  // Assert
+  assert.deepEqual(this.recordArray.get('content'), [
+    this.posts[0]._internalModel,
+    this.posts[1]._internalModel,
+    this.posts[2]._internalModel,
+  ]);
+});
+
+test('should listen for child_removed changes when query params has cacheId', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  await adapter.query(this.store, this.type, {
+    cacheId: 'foo',
+  }, this.recordArray);
+  await this.ref.update({ '/posts/post_a': null });
+
+  // Assert
+  assert.deepEqual(this.recordArray.get('content'), [
+    this.posts[1]._internalModel,
+  ]);
+});
+
+test('should increase limit when loading more records', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const queryParams = {
+    cacheId: 'foo',
+    limitToFirst: 1,
+  };
+
+  this.recordArray.set('query', queryParams);
+
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  await adapter.query(this.store, this.type, queryParams, this.recordArray);
+  await this.recordArray.get('firebase').next(1);
+
+  // Assert
+  assert.deepEqual(this.recordArray.get('query'), {
+    cacheId: 'foo',
+    limitToFirst: 2,
+    orderBy: 'id',
+  });
+});
+
+test('should re-query when loading more records', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const stub = sinon.stub();
+
+  this.recordArray.set('update', stub);
+
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  await adapter.query(this.store, this.type, {
+    cacheId: 'foo',
+    limitToFirst: 1,
+  }, this.recordArray);
+  await this.recordArray.get('firebase').next(1);
+
+  // Assert
+  assert.ok(stub.calledOnce);
+});
+
+test('should track query when query params has cacheId', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  await adapter.query(this.store, this.type, {
+    cacheId: 'foo',
+  }, this.recordArray);
+
+  // Assert
+  assert.deepEqual(adapter.get('trackedQueries'), { 'foo': this.recordArray });
+});
+
+test('should turn off existing query listener when re-querying it', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const recordArray = EmberObject.create(this.recordArray);
+  const spy = sinon.spy(recordArray.firebase, 'off');
+  const adapter = this.subject({
+    firebase: this.ref,
+    trackedQueries: { foo: recordArray },
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  await adapter.query(this.store, this.type, {
+    cacheId: 'foo',
+  }, this.recordArray);
+
+  // Assert
+  assert.ok(spy.calledOnce);
 });
