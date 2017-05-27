@@ -501,6 +501,20 @@ test('should push realtime child_added changes to store after finding all record
   assert.ok(stub.calledWithExactly('foo'));
 });
 
+moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | deleteRecord', {
+  needs: [ 'service:firebase' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(getFixtureData());
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
 test('should remove record from Firebase when deleting a record', async function(assert) {
   assert.expect(1);
 
