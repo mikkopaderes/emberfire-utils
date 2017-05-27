@@ -11,7 +11,7 @@ import unStubFirebase from 'dummy/tests/helpers/unstub-firebase';
 import getFixtureData from 'dummy/tests/helpers/fixture-data';
 import stubPromise from 'dummy/tests/helpers/stub-promise';
 
-moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex', {
+moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | generateIdForRecord', {
   needs: [ 'service:firebase' ],
 
   beforeEach() {
