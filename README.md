@@ -17,11 +17,11 @@ ember install emberfire-utils
   * [Update only the changed attributes of a record](#update-only-the-changed-attributes-of-a-record)
   * [Query records with path and infinite scrolling](#query-records-with-path-and-infinite-scrolling)
 * [`hasFiltered` relationship](#hasfiltered-relationship-not-really-a-relationship)
-* [Utility service](#utility-service)
+* [Utility Service](#utility-service)
   * [Multi-path updates](#multi-path-updates)
   * [Storage manipulations](#storage-manipulations)
   * [Queries for non-model data](#flexible-queries)
-* [FirebaseUI component](#firebaseui)
+* [FirebaseUI Component](#firebaseui)
 
 ## Configuration
 
@@ -99,7 +99,7 @@ this.get('store').findRecord('post', 'post_a').then((post) => {
 
 ### Update only the changed attributes of a record
 
-By default, only the changed attributes will be updated in Firebase whenever we call `save`. This way, we can now have rules that doesn't allow some attributes to be edited.
+By default, only the changed attributes will be updated in Firebase whenever we call `save()`. This way, we can now have rules that doesn't allow some attributes to be edited.
 
 ### Query records with path and infinite scrolling
 
@@ -108,7 +108,7 @@ The query params here uses the same format as the one in [EmberFire](https://git
 * `orderBy: '.value'`.
 * `path` to query the data from
 * `cacheId` to prevent duplicate listeners and make the query result array update in realtime
-  * Changes the model itself inside the query result array will still update in realtime even if `cacheId` isn't provided.
+  * Without `cacheId`, the query result array won't listen for `child_added` or `child_removed` changes. However, the models that are already inside of it will still update in realtime.
   * `cacheId` isn't available in `queryRecord`.
 
 #### With path
