@@ -179,7 +179,7 @@ export default Adapter.extend({
             });
           });
         } else {
-          resolve();
+          reject();
         }
       });
 

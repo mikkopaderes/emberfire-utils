@@ -674,7 +674,7 @@ test('should return a single record that matches the path query params', async f
   assert.deepEqual(result, this.post);
 });
 
-test('should return no record when nothing matches the query params', async function(assert) {
+test('should error when no record matches the query params', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -683,13 +683,15 @@ test('should return no record when nothing matches the query params', async func
     findRecord: this.findRecord,
   });
 
-  // Act
-  const result = await adapter.queryRecord(this.store, this.type, {
-    equalTo: 'foo',
-  });
-
-  // Assert
-  assert.deepEqual(result, undefined);
+  try {
+    // Act
+    await adapter.queryRecord(this.store, this.type, {
+      equalTo: 'foo',
+    });
+  } catch(error) {
+    // Assert
+    assert.ok(true);
+  }
 });
 
 moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | query', {
