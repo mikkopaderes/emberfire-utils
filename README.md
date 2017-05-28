@@ -16,8 +16,8 @@ ember install emberfire-utils
   * [Save and delete records with fan-out](#save-and-delete-records-with-fan-out)
   * [Update only the changed attributes of a record](#update-only-the-changed-attributes-of-a-record)
   * [Query records with path and infinite scrolling](#query-records-with-path-and-infinite-scrolling)
-* [`hasFiltered` model relationship](#hasfiltered-relationship)
-* [Utility service](#utilities)
+* [`hasFiltered` relationship](#hasfiltered-relationship-not-really-a-relationship)
+* [Utility service](#utility-service)
   * [Multi-path updates](#multi-path-updates)
   * [Storage manipulations](#storage-manipulations)
   * [Queries for non-model data](#flexible-queries)
@@ -143,7 +143,7 @@ this.get('store').query('post', {
 
 #### `hasMany` doesn't work ####
 
-It's just bad for Firebase users. Alternatively, use [`hasFiltered`](#hasfiltered-relationship).
+It's just bad for Firebase users. Alternatively, use [`hasFiltered`](#hasfiltered-relationship-not-really-a-relationship).
 
 #### Relationship won't get updated when firing `save()` ####
 
@@ -339,7 +339,7 @@ this.get('firebaseUtil').deleteFile(url).then(() => {
 > `url` should be the HTTPS URL representation of the file.
 > e.g. https://firebasestorage.googleapis.com/b/bucket/o/images%20stars.jpg
 
-### Flexible queries
+### Queries for non-model data
 
 To make things easy and familiar, `firebase-util` service provides methods for finding records that's similar with [`DS.Store`](http://emberjs.com/api/data/classes/DS.Store.html).
 
