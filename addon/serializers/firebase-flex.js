@@ -1,5 +1,6 @@
 /** @module emberfire-utils */
 import { pluralize } from 'ember-inflector';
+import { assign } from 'ember-platform';
 import EmberFireSerializer from 'emberfire/serializers/firebase';
 
 /**
@@ -17,7 +18,7 @@ export default EmberFireSerializer.extend({
     const modelName = snapshot.modelName;
     const snapshotId = snapshot.id;
     const snapshotPath = `/${pluralize(modelName)}/${snapshotId}`;
-    const changedAttributes = Object.assign({}, snapshot.changedAttributes());
+    const changedAttributes = assign({}, snapshot.changedAttributes());
 
     snapshot.eachAttribute((key, attribute) => {
       if (changedAttributes.hasOwnProperty(key)) {
