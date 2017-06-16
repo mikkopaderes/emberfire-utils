@@ -120,7 +120,7 @@ test('should push realtime changes to store', async function(assert) {
   assert.ok(spy.calledOnce);
 });
 
-test('should track Firebase listeners', async function(assert) {
+test('should track Firebase listeners when not in FastBoot', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -143,6 +143,32 @@ test('should track Firebase listeners', async function(assert) {
 
   // Assert
   assert.deepEqual(result, { '/posts/post_c': { value: true } });
+});
+
+test('should not track Firebase listeners when in FastBoot', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const serializedSnapshot = {
+    '/posts/post_c/message': 'Message',
+    '/posts/post_c/timestamp': 12345,
+  };
+  const adapter = this.subject({
+    firebase: this.ref,
+    fastboot: EmberObject.create({ isFastBoot: true }),
+    serialize: sinon.stub().returns(serializedSnapshot),
+  });
+
+  // Act
+  await adapter.createRecord(this.store, this.type, {
+    id: 'post_c',
+    message: 'Message',
+    timestamp: 12345,
+  });
+  const result = adapter.get('trackedListeners');
+
+  // Assert
+  assert.deepEqual(result, {});
 });
 
 test('should not duplicate pushing realtime changes to store', async function(assert) {
@@ -330,7 +356,7 @@ test('should push realtime changes to store', async function(assert) {
   assert.ok(spy.calledOnce);
 });
 
-test('should track Firebase listeners', async function(assert) {
+test('should track Firebase listeners when not in FastBoot', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -344,6 +370,23 @@ test('should track Firebase listeners', async function(assert) {
 
   // Arrange
   assert.deepEqual(result, { '/posts/post_a': { value: true } });
+});
+
+test('should not track Firebase listeners when in FastBoot', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    fastboot: EmberObject.create({ isFastBoot: true }),
+  });
+
+  // Act
+  await adapter.findRecord(this.store, this.type, 'post_a');
+  const result = adapter.get('trackedListeners');
+
+  // Arrange
+  assert.deepEqual(result, {});
 });
 
 test('should not duplicate pushing realtime changes to store', async function(assert) {
@@ -462,7 +505,7 @@ test('should error when finding all records for a model but nothing exists', asy
   }
 });
 
-test('should track Firebase listeners when finding all records for a model', async function(assert) {
+test('should track Firebase listeners when finding all records for a model and not in FastBoot', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -481,6 +524,24 @@ test('should track Firebase listeners when finding all records for a model', asy
     '/posts/post_a': { value: true },
     '/posts/post_b': { value: true },
   });
+});
+
+test('should not track Firebase listeners when finding all records for a model and in FastBoot', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    fastboot: EmberObject.create({ isFastBoot: true }),
+    findRecord: this.findRecord,
+  });
+
+  // Act
+  await adapter.findAll(this.store, this.type);
+  const result = adapter.get('trackedListeners');
+
+  // Arrange
+  assert.deepEqual(result, {});
 });
 
 test('should push realtime child_added changes to store after finding all records for a model', async function(assert) {
@@ -878,7 +939,7 @@ test('should return no records when nothing matches the query params', async fun
   assert.deepEqual(result, []);
 });
 
-test('should listen for child_added changes when query params has cacheId', async function(assert) {
+test('should listen for child_added changes when query params has cacheId and not in FastBoot', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -907,7 +968,33 @@ test('should listen for child_added changes when query params has cacheId', asyn
   ]);
 });
 
-test('should listen for child_removed changes when query params has cacheId', async function(assert) {
+test('should not listen for child_added changes when query params has cacheId and in FastBoot', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    fastboot: EmberObject.create({ isFastBoot: true }),
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  await adapter.query(this.store, this.type, {
+    cacheId: 'foo',
+  }, this.recordArray);
+  await this.ref.update({
+    '/posts/post_c': {
+      message: 'Post C',
+      timestamp: 12345,
+      author: 'user_a',
+    },
+  });
+
+  // Assert
+  assert.deepEqual(this.recordArray.get('content'), []);
+});
+
+test('should listen for child_removed changes when query params has cacheId and not in FastBoot', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -926,6 +1013,26 @@ test('should listen for child_removed changes when query params has cacheId', as
   assert.deepEqual(this.recordArray.get('content'), [
     this.posts[1]._internalModel,
   ]);
+});
+
+test('should not listen for child_removed changes when query params has cacheId and in FastBoot', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    fastboot: EmberObject.create({ isFastBoot: true }),
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  await adapter.query(this.store, this.type, {
+    cacheId: 'foo',
+  }, this.recordArray);
+  await this.ref.update({ '/posts/post_a': null });
+
+  // Assert
+  assert.deepEqual(this.recordArray.get('content'), []);
 });
 
 test('should increase limit when loading more records', async function(assert) {
@@ -980,7 +1087,7 @@ test('should re-query when loading more records', async function(assert) {
   assert.ok(stub.calledOnce);
 });
 
-test('should track query when query params has cacheId', async function(assert) {
+test('should track query when query params has cacheId and not in FastBoot', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -996,6 +1103,25 @@ test('should track query when query params has cacheId', async function(assert) 
 
   // Assert
   assert.deepEqual(adapter.get('trackedQueries'), { 'foo': this.recordArray });
+});
+
+test('should not track query when query params has cacheId and in FastBoot', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+    fastboot: EmberObject.create({ isFastBoot: true }),
+    findRecord: this.adapterFindRecord,
+  });
+
+  // Act
+  await adapter.query(this.store, this.type, {
+    cacheId: 'foo',
+  }, this.recordArray);
+
+  // Assert
+  assert.deepEqual(adapter.get('trackedQueries'), {});
 });
 
 test('should turn off existing query listener when re-querying it', async function(assert) {

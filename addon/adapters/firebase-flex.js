@@ -4,6 +4,8 @@ import { assign } from 'ember-platform';
 import { bind } from 'ember-runloop';
 import Adapter from 'ember-data/adapter';
 import RSVP from 'rsvp';
+import computed from 'ember-computed';
+import getOwner from 'ember-owner/get';
 import inject from 'ember-service/inject';
 
 /**
@@ -32,6 +34,15 @@ export default Adapter.extend({
    * @default
    */
   trackedQueries: {},
+
+  /**
+   * @type {Ember.Service}
+   * @default
+   * @readonly
+   */
+  fastboot: computed(function() {
+    return getOwner(this).lookup('service:fastboot');
+  }),
 
   /**
    * @return {string} Push ID
@@ -274,25 +285,29 @@ export default Adapter.extend({
    * @private
    */
   _setupValueListener(store, modelName, id) {
-    const path = `/${pluralize(modelName)}/${id}`;
+    const fastboot = this.get('fastboot');
 
-    if (!this._isListenerTracked(path, 'value')) {
-      this._trackListener(path, 'value');
+    if (!fastboot || !fastboot.get('isFastBoot')) {
+      const path = `/${pluralize(modelName)}/${id}`;
 
-      const ref = this._getFirebaseReference(modelName, id);
+      if (!this._isListenerTracked(path, 'value')) {
+        this._trackListener(path, 'value');
 
-      ref.on('value', bind(this, (snapshot) => {
-        if (snapshot.exists()) {
-          const snapshotWithId = this._getGetSnapshotWithId(snapshot);
-          const normalizedRecord = store.normalize(modelName, snapshotWithId);
+        const ref = this._getFirebaseReference(modelName, id);
 
-          store.push(normalizedRecord);
-        } else {
+        ref.on('value', bind(this, (snapshot) => {
+          if (snapshot.exists()) {
+            const snapshotWithId = this._getGetSnapshotWithId(snapshot);
+            const normalizedRecord = store.normalize(modelName, snapshotWithId);
+
+            store.push(normalizedRecord);
+          } else {
+            this._unloadRecord(store, modelName, id);
+          }
+        }), bind(this, (error) => {
           this._unloadRecord(store, modelName, id);
-        }
-      }), bind(this, (error) => {
-        this._unloadRecord(store, modelName, id);
-      }));
+        }));
+      }
     }
   },
 
@@ -302,13 +317,17 @@ export default Adapter.extend({
    * @private
    */
   _setupListListener(store, modelName) {
-    const path = `/${pluralize(modelName)}`;
+    const fastboot = this.get('fastboot');
 
-    if (!this._isListenerTracked(path, 'child_added')) {
-      this._trackListener(path, 'child_added');
-      this._getFirebaseReference(modelName).on('child_added', (snapshot) => {
-        this._setupValueListener(store, modelName, snapshot.key);
-      });
+    if (!fastboot || !fastboot.get('isFastBoot')) {
+      const path = `/${pluralize(modelName)}`;
+
+      if (!this._isListenerTracked(path, 'child_added')) {
+        this._trackListener(path, 'child_added');
+        this._getFirebaseReference(modelName).on('child_added', (snapshot) => {
+          this._setupValueListener(store, modelName, snapshot.key);
+        });
+      }
     }
   },
 
@@ -320,28 +339,33 @@ export default Adapter.extend({
    * @private
    */
   _setupQueryListListener(store, modelName, recordArray, ref) {
-    const onChildAdded = bind(this, (snapshot) => {
-      store.findRecord(modelName, snapshot.key).then((record) => {
-        // We're using a private API here and will likely break
-        // without warning. We need to make sure that our acceptance
-        // tests will capture this even if indirectly.
-        recordArray.get('content').addObject(record._internalModel);
+    const fastboot = this.get('fastboot');
+
+    if (!fastboot || !fastboot.get('isFastBoot')) {
+      const onChildAdded = bind(this, (snapshot) => {
+        store.findRecord(modelName, snapshot.key).then((record) => {
+          // We're using a private API here and will likely break
+          // without warning. We need to make sure that our acceptance
+          // tests will capture this even if indirectly.
+          recordArray.get('content').addObject(record._internalModel);
+        });
       });
-    });
 
-    ref.on('child_added', onChildAdded);
+      ref.on('child_added', onChildAdded);
 
-    const onChildRemoved = bind(this, (snapshot) => {
-      const record = recordArray.get('content').findBy('id', snapshot.key);
+      const onChildRemoved = bind(this, (snapshot) => {
+        const record = recordArray.get('content').findBy('id', snapshot.key);
 
-      if (record) {
-        recordArray.get('content').removeObject(record);
-      }
-    });
+        if (record) {
+          recordArray.get('content').removeObject(record);
+        }
+      });
 
-    ref.on('child_removed', onChildRemoved);
+      ref.on('child_removed', onChildRemoved);
 
-    this._setupRecordExtensions(recordArray, ref, onChildAdded, onChildRemoved);
+      this._setupRecordExtensions(
+          recordArray, ref, onChildAdded, onChildRemoved);
+    }
   },
 
   /**
@@ -497,17 +521,21 @@ export default Adapter.extend({
    * @private
    */
   _trackQuery(cacheId, recordArray) {
-    const trackedQueries = this.get('trackedQueries');
-    const trackedQueryCache = trackedQueries[cacheId];
+    const fastboot = this.get('fastboot');
 
-    if (trackedQueryCache) {
-      trackedQueryCache.get('firebase').off();
+    if (!fastboot || !fastboot.get('isFastBoot')) {
+      const trackedQueries = this.get('trackedQueries');
+      const trackedQueryCache = trackedQueries[cacheId];
+
+      if (trackedQueryCache) {
+        trackedQueryCache.get('firebase').off();
+      }
+
+      const trackedQuery = {};
+
+      trackedQuery[cacheId] = recordArray;
+
+      this.set('trackedQueries', assign({}, trackedQueries, trackedQuery));
     }
-
-    const trackedQuery = {};
-
-    trackedQuery[cacheId] = recordArray;
-
-    this.set('trackedQueries', assign({}, trackedQueries, trackedQuery));
   },
 });
