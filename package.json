@@ -25,6 +25,7 @@
     "ember-cli-htmlbars": "^2.0.1",
     "ember-cli-node-assets": "^0.2.2",
     "emberfire": "^2.0.7",
+    "fastboot-transform": "^0.1.0",
     "firebaseui": "^1.0.1"
   },
   "devDependencies": {

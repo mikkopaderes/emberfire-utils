@@ -2,6 +2,7 @@
 'use strict';
 
 var Funnel = require('broccoli-funnel');
+const fastbootTransform = require('fastboot-transform');
 var featuresToExclude = [];
 var assetsToExclude = [];
 
@@ -31,7 +32,7 @@ module.exports = {
   name: 'emberfire-utils',
   options: {
     nodeAssets: {
-      'firebaseui': function() {
+      firebaseui: function() {
         var imports = [ 'firebaseui.js', 'firebaseui.css' ];
 
         if (isFeatureExcluded('firebase-ui')) {
@@ -41,6 +42,9 @@ module.exports = {
         return {
           srcDir: 'dist',
           import: imports,
+          processTree(input) {
+            return fastbootTransform(input);
+          }
         };
       },
     },
