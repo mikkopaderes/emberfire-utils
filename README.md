@@ -14,6 +14,7 @@ ember install emberfire-utils
 
 * [Flexible Adapter and Serializer](#flexible-adapter-and-serializer)
   * [Save and delete records with fan-out](#save-and-delete-records-with-fan-out)
+  * [Save records with path](#save-records-with-path)
   * [Update only the changed attributes of a record](#update-only-the-changed-attributes-of-a-record)
   * [Query records with path and infinite scrolling](#query-records-with-path-and-infinite-scrolling)
 * [`hasFiltered` relationship](#hasfiltered-relationship-not-really-a-relationship)
@@ -69,14 +70,6 @@ this.get('store').createRecord('post', {
   }
 });
 
-// Saving a new record to a path
-this.get('store').createRecord('post', {
-  title: 'Foo',
-  message: 'Bar'
-}).save({
-  adapterOptions: { path: 'comments/post_a' }
-});
-
 // Deleting a record with fan-out
 this.get('store').findRecord('post', 'post_a').then((post) => {
   post.deleteRecord();
@@ -104,6 +97,17 @@ this.get('store').findRecord('post', 'post_a').then((post) => {
 ```
 
 > Notice the `$id`. It's a keyword that will be replaced by the model's ID.
+
+### Save records with path
+
+```javascript
+this.get('store').createRecord('post', {
+  title: 'Foo',
+  message: 'Bar'
+}).save({
+  adapterOptions: { path: 'comments/post_a' }
+});
+```
 
 ### Update only the changed attributes of a record
 
