@@ -13,7 +13,7 @@ test('should find all records', function(assert) {
   assert.expect(4);
 
   // Act
-  visit('/');
+  visit('/posts');
   click(findAllButton);
 
   // Assert

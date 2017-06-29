@@ -15,22 +15,21 @@ export default EmberFireSerializer.extend({
    */
   serialize(snapshot) {
     const fanout = {};
-    const modelName = snapshot.modelName;
-    const snapshotId = snapshot.id;
-    const snapshotPath = `/${pluralize(modelName)}/${snapshotId}`;
+    const path = this._getPath(snapshot);
     const changedAttributes = assign({}, snapshot.changedAttributes());
 
     snapshot.eachAttribute((key, attribute) => {
       if (changedAttributes.hasOwnProperty(key)) {
-        fanout[`${snapshotPath}/${key}`] = snapshot.attr(key);
+        fanout[`${path}/${key}`] = snapshot.attr(key);
       }
     });
 
     // TODO: Implement updating changed relationships once Ember Data
-    // supports tracking it.
+    // supports tracking it. See directions of
+    // https://github.com/emberjs/data/pull/3698
     // snapshot.eachRelationship((key, relationship) => {
     //   if (relationship.kind === 'belongsTo') {
-    //     fanout[`${snapshotPath}/${key}`] = snapshot.belongsTo(key, {
+    //     fanout[`${path}/${key}`] = snapshot.belongsTo(key, {
     //       id: true,
     //     });
     //   } else if (relationship.kind === 'hasMany') {
@@ -47,5 +46,27 @@ export default EmberFireSerializer.extend({
     // });
 
     return fanout;
+  },
+
+  /**
+   * @param {DS.Snapshot} snapshot
+   * @return {string} Firebase path
+   * @private
+   */
+  _getPath(snapshot) {
+    if (snapshot.adapterOptions &&
+        snapshot.adapterOptions.hasOwnProperty('path')) {
+      let pathPrefix = snapshot.adapterOptions.path;
+
+      if (pathPrefix) {
+        if (!pathPrefix.startsWith('/')) {
+          pathPrefix = `/${pathPrefix}`;
+        }
+
+        return `${pathPrefix}/${snapshot.id}`;
+      }
+    }
+
+    return `/${pluralize(snapshot.modelName)}/${snapshot.id}`;
   },
 });

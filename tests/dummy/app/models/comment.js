@@ -5,5 +5,6 @@ import attr from 'ember-data/attr';
 export default Model.extend({
   message: attr('string'),
   timestamp: attr('number'),
+  author: belongsTo('user'),
   post: belongsTo('post'),
 });

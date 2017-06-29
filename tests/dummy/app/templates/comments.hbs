@@ -1,0 +1,52 @@
+<main>
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Message</th>
+      <th>Timestamp</th>
+      <th>Author</th>
+      <th>Comments</th>
+    </tr>
+
+    {{#each comments as |comment|}}
+      <tr>
+        <td data-test="comment-id">{{comment.id}}</td>
+        <td data-test="comment-message">{{comment.message}}</td>
+        <td data-test="comment-timestamp">{{comment.timestamp}}</td>
+        <td data-test="comment-author">{{comment.author.name}}</td>
+      </tr>
+    {{/each}}
+  </table>
+
+  <button
+      data-test="create-record-button"
+      onclick={{action handleCreateRecordClick}}>
+    Create Record
+  </button>
+
+  <button
+      data-test="query-record-with-path-button"
+      onclick={{action handleQueryRecordWithPathClick}}>
+    Query Record With Path
+  </button>
+
+  <button
+      data-test="query-with-path-button"
+      onclick={{action handleQueryWithPathClick}}>
+    Query With Path
+  </button>
+
+  <button
+      data-test="load-more-query-records-button"
+      onclick={{action handleLoadMoreQueryRecordsClick}}>
+    Load More Query Records
+  </button>
+
+  <button
+      data-test="reset-record-button"
+      onclick={{action handleResetRecordsClick}}>
+    Reset Records
+  </button>
+</main>
+
+{{outlet}}

@@ -13,7 +13,7 @@ test('should update record', function(assert) {
   assert.expect(4);
 
   // Act
-  visit('/');
+  visit('/posts');
   click(updateRecordButton);
 
   // Assert

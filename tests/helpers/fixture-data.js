@@ -4,21 +4,17 @@
 export default function getFixtureData() {
   return {
     comments: {
-      comment_a: {
-        message: 'Comment A',
-        timestamp: 12345,
-        author: 'user_b',
-      },
-      comment_b: {
-        message: 'Comment B',
-        timestamp: 12345,
-        author: 'user_b',
-      },
-    },
-    postComments: {
       post_a: {
-        comment_a: true,
-        comment_b: true,
+        comment_a: {
+          message: 'Comment A',
+          timestamp: 12345,
+          author: 'user_b',
+        },
+        comment_b: {
+          message: 'Comment B',
+          timestamp: 12345,
+          author: 'user_b',
+        },
       },
     },
     posts: {
@@ -50,6 +46,9 @@ export default function getFixtureData() {
       },
       user_b: {
         name: 'User B',
+      },
+      user_c: {
+        name: 'User C',
       },
     },
   };

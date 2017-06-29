@@ -13,7 +13,7 @@ test('should display record when fetched', function(assert) {
   assert.expect(4);
 
   // Act
-  visit('/');
+  visit('/posts');
   click(findRecordButton);
 
   // Assert

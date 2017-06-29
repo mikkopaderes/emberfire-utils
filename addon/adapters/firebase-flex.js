@@ -89,12 +89,12 @@ export default Adapter.extend({
    * @param {DS.Store} store
    * @param {DS.Model} type
    * @param {string} id
+   * @param {DS.Snapshot} [snapshot={}]
    * @return {Promise} Resolves with the fetched record
    */
-  findRecord(store, type, id) {
+  findRecord(store, type, id, snapshot = {}) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
       const modelName = type.modelName;
-      const ref = this._getFirebaseReference(modelName, id);
       const onValue = bind(this, (snapshot) => {
         if (snapshot.exists()) {
           this._setupValueListener(store, modelName, id);
@@ -104,6 +104,15 @@ export default Adapter.extend({
           reject();
         }
       });
+
+      let ref = this._getFirebaseReference(modelName, id);
+
+      if (snapshot.adapterOptions &&
+          snapshot.adapterOptions.hasOwnProperty('path')) {
+        const path = `${snapshot.adapterOptions.path}/${id}`;
+
+        ref = this.get('firebase').child(path);
+      }
 
       ref.on('value', onValue);
     }));
@@ -178,11 +187,18 @@ export default Adapter.extend({
    */
   queryRecord(store, type, query = {}) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
+      const path = query.path;
       const onValue = bind(this, (snapshot) => {
         if (snapshot.exists()) {
           // Will always loop once because of the forced limitTo* 1
           snapshot.forEach((child) => {
-            this.findRecord(store, type, child.key).then((record) => {
+            const snapshot = {};
+
+            if (path && typeof child.val() === 'object') {
+              snapshot.adapterOptions = { path: path };
+            }
+
+            this.findRecord(store, type, child.key, snapshot).then((record) => {
               ref.off('value', onValue);
               resolve(record);
             }).catch((error) => {
@@ -194,8 +210,8 @@ export default Adapter.extend({
         }
       });
 
-      let ref = query.path ?
-          this.get('firebase').child(query.path) :
+      let ref = path ?
+          this.get('firebase').child(path) :
           this._getFirebaseReference(type.modelName);
 
       ref = this._setupQuerySortingAndFiltering(ref, query);
@@ -215,6 +231,7 @@ export default Adapter.extend({
    */
   query(store, type, query = {}, recordArray) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
+      const path = query.path;
       const hasCacheId = query.hasOwnProperty('cacheId');
       const modelName = type.modelName;
       const onValue = bind(this, (snapshot) => {
@@ -222,7 +239,14 @@ export default Adapter.extend({
 
         if (snapshot.exists()) {
           snapshot.forEach((child) => {
-            findRecordPromises.push(this.findRecord(store, type, child.key));
+            const snapshot = {};
+
+            if (path && typeof child.val() === 'object') {
+              snapshot.adapterOptions = { path: path };
+            }
+
+            findRecordPromises.push(this.findRecord(
+                store, type, child.key, snapshot));
           });
         }
 
@@ -239,8 +263,8 @@ export default Adapter.extend({
         }));
       });
 
-      let ref = query.path ?
-          this.get('firebase').child(query.path) :
+      let ref = path ?
+          this.get('firebase').child(path) :
           this._getFirebaseReference(modelName);
 
       ref = this._setupQuerySortingAndFiltering(ref, query);

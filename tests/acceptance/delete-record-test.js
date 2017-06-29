@@ -14,7 +14,7 @@ test('should delete record', function(assert) {
   assert.expect(5);
 
   // Act
-  visit('/');
+  visit('/posts');
   click(createRecordButton);
 
   // Assert

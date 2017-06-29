@@ -69,6 +69,14 @@ this.get('store').createRecord('post', {
   }
 });
 
+// Saving a new record to a path
+this.get('store').createRecord('post', {
+  title: 'Foo',
+  message: 'Bar'
+}).save({
+  adapterOptions: { path: 'comments/post_a' }
+});
+
 // Deleting a record with fan-out
 this.get('store').findRecord('post', 'post_a').then((post) => {
   post.deleteRecord();
@@ -143,7 +151,9 @@ this.get('store').query('post', {
 
 #### `hasMany` doesn't work ####
 
-It's just bad for Firebase users. Alternatively, use [`hasFiltered`](#hasfiltered-relationship-not-really-a-relationship).
+Without being able to limit how many data gets downloaded by `hasMany`, it's generally bad for Firebase apps.
+
+Alternatively, use [`hasFiltered`](#hasfiltered-relationship-not-really-a-relationship).
 
 #### Relationship won't get updated when firing `save()` ####
 
@@ -167,76 +177,6 @@ store.findRecord('post', 'another_user').then((user) => {
   });
 });
 ```
-
-#### Adapter isn't truly flexible for now ####
-
-It only supports the data structure that looks like this:
-
-```json
-{
-  "chatrooms": {
-    "one": {
-      "title": "Historical Tech Pioneers",
-      "lastMessage": "ghopper: Relay malfunction found. Cause: moth.",
-      "timestamp": 1459361875666
-    },
-    "two": { ... },
-    "three": { ... }
-  },
-
-  "chatroomMessages": {
-    "one": {
-      "m1": true,
-      "m2": true,
-      "m3": true
-    },
-    "two": { ... },
-    "three": { ... }
-  },
-
-  "messages": {
-    "m1": {
-      "name": "eclarke",
-      "message": "The relay seems to be malfunctioning.",
-      "timestamp": 1459361875337
-    },
-    "m2": { ... },
-    "m3": { ... }
-  }
-}
-```
-
-However, I'm pretty sure that there's some people that uses something like this:
-
-```json
-{
-  "chatrooms": {
-    "one": {
-      "title": "Historical Tech Pioneers",
-      "lastMessage": "ghopper: Relay malfunction found. Cause: moth.",
-      "timestamp": 1459361875666
-    },
-    "two": { ... },
-    "three": { ... }
-  },
-
-  "messages": {
-    "one": {
-      "m1": {
-        "name": "eclarke",
-        "message": "The relay seems to be malfunctioning.",
-        "timestamp": 1459361875337
-      },
-      "m2": { ... },
-      "m3": { ... }
-    },
-    "two": { ... },
-    "three": { ... }
-  }
-}
-```
-
-Support for any type of structure will be a future enhancement.
 
 ## `hasFiltered` relationship (not really a relationship)
 
