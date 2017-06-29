@@ -101,7 +101,7 @@ this.get('store').findRecord('post', 'post_a').then((post) => {
 ### Save records with path
 
 ```javascript
-this.get('store').createRecord('post', {
+this.get('store').createRecord('comment', {
   title: 'Foo',
   message: 'Bar'
 }).save({
