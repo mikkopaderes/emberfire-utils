@@ -20,6 +20,15 @@ module.exports = function(environment) {
     APP: {
       // Here you can pass flags/options to your application instance
       // when it is created
+    },
+
+    firebase: {
+      apiKey: 'AIzaSyCmI9nP62JwpZbgGYbnJtLu7gyJDXdZkk8',
+      authDomain: 'rmmmp-playground.firebaseapp.com',
+      databaseURL: 'https://rmmmp-playground.firebaseio.com',
+      projectId: 'rmmmp-playground',
+      storageBucket: 'rmmmp-playground.appspot.com',
+      messagingSenderId: '183868689812'
     }
   };
 
