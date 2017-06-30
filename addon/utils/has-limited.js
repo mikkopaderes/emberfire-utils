@@ -21,6 +21,9 @@ let PromiseArray = ArrayProxy.extend(PromiseProxyMixin);
 export default function hasLimited(modelName, listenerId, path, options) {
   return computed({
     get() {
+      console.warn('DEPRECATION: hasLimited() will be removed in favor ' +
+          'of hasFiltered()');
+
       let newListenerId = listenerId.replace('$id', this.get('id'));
       let newPath = path.replace('$id', this.get('id'));
 

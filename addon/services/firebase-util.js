@@ -204,6 +204,9 @@ export default Service.extend({
    * @return {Array.<Object>} Records
    */
   query(modelName, listenerId, path, option = {}) {
+    console.warn('DEPRECATION: firebase-util query() will be removed in ' +
+        'favor of firebase-flex adapter query()');
+
     return new RSVP.Promise((resolve, reject) => {
       let query = this.get('_queryCache')[listenerId];
 
@@ -256,6 +259,9 @@ export default Service.extend({
    * @return {Promise} Resolves when the next set of data has been loaded
    */
   next(listenerId, numberOfRecords) {
+    console.warn('DEPRECATION: firebase-util next() will be removed in favor ' +
+        'of firebase-flex adapter\'s own implementation');
+
     return new RSVP.Promise((resolve, reject) => {
       let query = this.get('_queryCache')[listenerId];
 

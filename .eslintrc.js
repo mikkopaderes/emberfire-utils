@@ -22,6 +22,7 @@ module.exports = {
       ignorePattern: '^import|test|moduleFor',
     }],
     'object-curly-spacing': [ 'error', 'always' ],
+    'no-console': [ 'error', { allow: [ 'warn' ] } ],
 
     // google config overrides due to unavoidable ember issues
     'no-invalid-this': 'off',
