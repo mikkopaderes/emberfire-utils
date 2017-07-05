@@ -59,7 +59,10 @@ export default Adapter.extend({
    */
   createRecord(store, type, snapshot) {
     return this.updateRecord(store, type, snapshot).then(() => {
-      this._setupValueListener(store, type.modelName, snapshot.id);
+      const path = snapshot.adapterOptions && snapshot.adapterOptions.path ?
+          snapshot.adapterOptions.path : null;
+
+      this._setupValueListener(store, type.modelName, snapshot.id, path);
     });
   },
 
@@ -94,10 +97,12 @@ export default Adapter.extend({
    */
   findRecord(store, type, id, snapshot = {}) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
+      const path = snapshot.adapterOptions && snapshot.adapterOptions.path ?
+          snapshot.adapterOptions.path : null;
       const modelName = type.modelName;
       const onValue = bind(this, (snapshot) => {
         if (snapshot.exists()) {
-          this._setupValueListener(store, modelName, id);
+          this._setupValueListener(store, modelName, id, path);
           ref.off('value', onValue);
           resolve(this._getGetSnapshotWithId(snapshot));
         } else {
@@ -105,14 +110,7 @@ export default Adapter.extend({
         }
       });
 
-      let ref = this._getFirebaseReference(modelName, id);
-
-      if (snapshot.adapterOptions &&
-          snapshot.adapterOptions.hasOwnProperty('path')) {
-        const path = `${snapshot.adapterOptions.path}/${id}`;
-
-        ref = this.get('firebase').child(path);
-      }
+      let ref = this._getFirebaseReference(modelName, id, path);
 
       ref.on('value', onValue);
     }));
@@ -210,11 +208,9 @@ export default Adapter.extend({
         }
       });
 
-      let ref = path ?
-          this.get('firebase').child(path) :
-          this._getFirebaseReference(type.modelName);
+      let ref = this._getFirebaseReference(type.modelName, undefined, path);
 
-      ref = this._setupQuerySortingAndFiltering(ref, query);
+      ref = this._setupQuerySortingAndFiltering(ref, query, true);
 
       ref.on('value', onValue, bind(this, (error) => {
         reject(error);
@@ -263,9 +259,7 @@ export default Adapter.extend({
         }));
       });
 
-      let ref = path ?
-          this.get('firebase').child(path) :
-          this._getFirebaseReference(modelName);
+      let ref = this._getFirebaseReference(modelName, undefined, path);
 
       ref = this._setupQuerySortingAndFiltering(ref, query);
 
@@ -306,18 +300,19 @@ export default Adapter.extend({
    * @param {DS.Store} store
    * @param {string} modelName
    * @param {string} id
+   * @param {string} path
    * @private
    */
-  _setupValueListener(store, modelName, id) {
+  _setupValueListener(store, modelName, id, path) {
     const fastboot = this.get('fastboot');
 
     if (!fastboot || !fastboot.get('isFastBoot')) {
-      const path = `/${pluralize(modelName)}/${id}`;
+      const key = path ? `${path}/${id}` : `${pluralize(modelName)}/${id}`;
 
-      if (!this._isListenerTracked(path, 'value')) {
-        this._trackListener(path, 'value');
+      if (!this._isListenerTracked(key, 'value')) {
+        this._trackListener(key, 'value');
 
-        const ref = this._getFirebaseReference(modelName, id);
+        const ref = this._getFirebaseReference(modelName, id, path);
 
         ref.on('value', bind(this, (snapshot) => {
           if (snapshot.exists()) {
@@ -344,7 +339,7 @@ export default Adapter.extend({
     const fastboot = this.get('fastboot');
 
     if (!fastboot || !fastboot.get('isFastBoot')) {
-      const path = `/${pluralize(modelName)}`;
+      const path = `${pluralize(modelName)}`;
 
       if (!this._isListenerTracked(path, 'child_added')) {
         this._trackListener(path, 'child_added');
@@ -485,13 +480,18 @@ export default Adapter.extend({
   /**
    * @param {string} modelName
    * @param {string} [id='']
+   * @param {string} [path]
    * @return {firebase.database.DataSnapshot} Firebase reference
    * @private
    */
-  _getFirebaseReference(modelName, id = '') {
-    const path = `/${pluralize(modelName)}/${id}`;
+  _getFirebaseReference(modelName, id = '', path) {
+    const firebase = this.get('firebase');
 
-    return this.get('firebase').child(path);
+    if (path) {
+      return firebase.child(`${path}/${id}`);
+    } else {
+      return firebase.child(`${pluralize(modelName)}/${id}`);
+    }
   },
 
   /**
