@@ -360,7 +360,7 @@ test('should error when record does not exist', async function(assert) {
   // Act
   try {
     await adapter.findRecord(this.store, this.type, 'post_z');
-  } catch(e) {
+  } catch (e) {
     // Assert
     assert.ok(true);
   }
@@ -543,7 +543,7 @@ test('should error when finding all records for a model but nothing exists', asy
   // Act
   try {
     await adapter.findAll(this.store, { modelName: 'foo' });
-  } catch(e) {
+  } catch (e) {
     // Assert
     assert.ok(true);
   }
@@ -793,7 +793,7 @@ test('should error when no record matches the query params', async function(asse
     await adapter.queryRecord(this.store, this.type, {
       equalTo: 'foo',
     });
-  } catch(error) {
+  } catch (error) {
     // Assert
     assert.ok(true);
   }

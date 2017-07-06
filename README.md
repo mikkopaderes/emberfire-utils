@@ -457,4 +457,4 @@ This addon is compatible with EmberFire 2.0.x.
 
 * `ember build`
 
-For more information on using ember-cli, visit [http://ember-cli.com/](http://ember-cli.com/).
+For more information on using ember-cli, visit [https://ember-cli.com/](http://ember-cli.com/).
