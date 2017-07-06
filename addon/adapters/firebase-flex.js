@@ -110,6 +110,7 @@ export default Adapter.extend({
         }
       });
 
+
       let ref = this._getFirebaseReference(modelName, id, path);
 
       ref.on('value', onValue);
@@ -248,7 +249,8 @@ export default Adapter.extend({
 
         RSVP.all(findRecordPromises).then(bind(this, (records) => {
           if (hasCacheId) {
-            this._setupQueryListListener(store, modelName, recordArray, ref);
+            this._setupQueryListListener(
+                store, modelName, path, recordArray, ref);
             this._trackQuery(query.cacheId, recordArray);
           }
 
@@ -353,16 +355,19 @@ export default Adapter.extend({
   /**
    * @param {DS.Store} store
    * @param {string} modelName
+   * @param {string} path
    * @param {DS.AdapterPopulatedRecordArray} recordArray
    * @param {firebase.database.DataSnapshot} ref
    * @private
    */
-  _setupQueryListListener(store, modelName, recordArray, ref) {
+  _setupQueryListListener(store, modelName, path, recordArray, ref) {
     const fastboot = this.get('fastboot');
 
     if (!fastboot || !fastboot.get('isFastBoot')) {
       const onChildAdded = bind(this, (snapshot) => {
-        store.findRecord(modelName, snapshot.key).then((record) => {
+        store.findRecord(modelName, snapshot.key, {
+          adapterOptions: { path: path },
+        }).then((record) => {
           // We're using a private API here and will likely break
           // without warning. We need to make sure that our acceptance
           // tests will capture this even if indirectly.
