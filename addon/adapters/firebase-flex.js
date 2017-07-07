@@ -193,7 +193,7 @@ export default Adapter.extend({
           snapshot.forEach((child) => {
             const snapshot = {};
 
-            if (path && typeof child.val() === 'object') {
+            if (path && !query.isReference) {
               snapshot.adapterOptions = { path: path };
             }
 
@@ -229,18 +229,16 @@ export default Adapter.extend({
   query(store, type, query = {}, recordArray) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
       const path = query.path;
-      const hasCacheId = query.hasOwnProperty('cacheId');
+      const recordPath = path && !query.isReference ? path : null;
       const modelName = type.modelName;
       const onValue = bind(this, (snapshot) => {
         const findRecordPromises = [];
 
         if (snapshot.exists()) {
           snapshot.forEach((child) => {
-            const snapshot = {};
-
-            if (path && typeof child.val() === 'object') {
-              snapshot.adapterOptions = { path: path };
-            }
+            const snapshot = {
+              adapterOptions: { path: recordPath },
+            };
 
             findRecordPromises.push(this.findRecord(
                 store, type, child.key, snapshot));
@@ -248,9 +246,9 @@ export default Adapter.extend({
         }
 
         RSVP.all(findRecordPromises).then(bind(this, (records) => {
-          if (hasCacheId) {
+          if (query.hasOwnProperty('cacheId')) {
             this._setupQueryListListener(
-                store, modelName, path, recordArray, ref);
+                store, modelName, recordPath, recordArray, ref);
             this._trackQuery(query.cacheId, recordArray);
           }
 
@@ -355,18 +353,18 @@ export default Adapter.extend({
   /**
    * @param {DS.Store} store
    * @param {string} modelName
-   * @param {string} path
+   * @param {string} recordPath
    * @param {DS.AdapterPopulatedRecordArray} recordArray
    * @param {firebase.database.DataSnapshot} ref
    * @private
    */
-  _setupQueryListListener(store, modelName, path, recordArray, ref) {
+  _setupQueryListListener(store, modelName, recordPath, recordArray, ref) {
     const fastboot = this.get('fastboot');
 
     if (!fastboot || !fastboot.get('isFastBoot')) {
       const onChildAdded = bind(this, (snapshot) => {
         store.findRecord(modelName, snapshot.key, {
-          adapterOptions: { path: path },
+          adapterOptions: { recordPath: recordPath },
         }).then((record) => {
           // We're using a private API here and will likely break
           // without warning. We need to make sure that our acceptance

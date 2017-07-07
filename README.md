@@ -119,15 +119,74 @@ The query params here uses the same format as the one in [EmberFire](https://git
 
 * `orderBy: '.value'`.
 * `path` to query the data from
+* `isReference` to know if the `path` is just a reference to a model in a different node (see example below)
 * `cacheId` to prevent duplicate listeners and make the query result array update in realtime
   * Without `cacheId`, the query result array won't listen for `child_added` or `child_removed` changes. However, the models that are already inside of it will still update in realtime.
   * `cacheId` isn't available in `queryRecord`.
 
 #### With path
 
+Let's assume the following data structure.
+
+```json
+{
+  "chats": {
+    "one": {
+      "title": "Historical Tech Pioneers",
+      "lastMessage": "ghopper: Relay malfunction found. Cause: moth.",
+      "timestamp": 1459361875666
+    },
+    "two": { ... },
+    "three": { ... }
+  },
+
+  "members": {
+    "one": {
+      "ghopper": true,
+      "alovelace": true,
+      "eclarke": true
+    },
+    "two": { ... },
+    "three": { ... }
+  },
+
+  "messages": {
+    "one": {
+      "m1": {
+        "name": "eclarke",
+        "message": "The relay seems to be malfunctioning.",
+        "timestamp": 1459361875337
+      },
+      "m2": { ... },
+      "m3": { ... }
+    },
+    "two": { ... },
+    "three": { ... }
+  },
+
+  "users": {
+    "ghopper": { ... },
+    "alovelace": { ... },
+    "eclarke": { ... }
+  }
+}
+```
+
+To fetch the chat members, you need to set the `path` and `isReference`. The `isReference` boolean indicates that the nodes under `members/one` are simply references to the `user` model which is represented by the `users` node.
+
 ```javascript
-this.get('store').query('post', {
-  path: 'userFeeds/user_a',
+this.get('store').query('user', {
+  path: 'members/one',
+  isReference: true,
+  limitToFirst: 10
+});
+```
+
+To fetch the chat messages, you just need to set the `path` and leave out the `isReference`. Without the `isReference` boolean, it indicates that the `messages/one/m1`, `messages/one/m2`, etc. are a direct representation of the `message` model.
+
+```javascript
+this.get('store').query('message', {
+  path: 'messages/one',
   limitToFirst: 10
 });
 ```
@@ -182,12 +241,15 @@ store.findRecord('post', 'another_user').then((user) => {
 });
 ```
 
+However, there's a good side to this. Now we can provide different values to those relationships rather than the default `true` value in EmberFire.
+
 ## `hasFiltered` relationship (not really a relationship)
 
 Most of the time, we don't want to use the `hasMany()` relationship in our models because:
 
-1. It loads all the data when we access it.
-2. Even if we don't access it, those array of IDs are still taking up internet data usage.
+1. It's not flexible enough to fetch from paths we want.
+2. It loads all the data when we access it.
+3. Even if we don't access it, those array of IDs are still taking up internet data usage.
 
 To solve those 2 problems above, use `hasFiltered()` relationship. It has the same parameters as `store.query()` and it also works with infinite scrolling as explained above.
 
@@ -296,25 +358,10 @@ For the examples below, assume we have the following Firebase data:
       "photoURL" : "foo.jpg",
       "username" : "bar"
     },
+    
     "hello" : {
       "photoURL" : "hello.jpg",
       "username" : "world"
-    }
-  },
-
-  "userFeeds": {
-    "foo" : {
-      "post_a" : true
-    },
-    "hello" : {
-      "post_a" : true
-    }
-  },
-
-  "posts" : {
-    "post_a" : {
-      "title" : "Title",
-      "message" : "Message"
     }
   }
 }
