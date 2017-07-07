@@ -364,7 +364,7 @@ export default Adapter.extend({
     if (!fastboot || !fastboot.get('isFastBoot')) {
       const onChildAdded = bind(this, (snapshot) => {
         store.findRecord(modelName, snapshot.key, {
-          adapterOptions: { recordPath: recordPath },
+          adapterOptions: { path: recordPath },
         }).then((record) => {
           // We're using a private API here and will likely break
           // without warning. We need to make sure that our acceptance
