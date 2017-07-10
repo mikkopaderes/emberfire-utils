@@ -24,10 +24,10 @@ test('should query records with path as reference to model', function(assert) {
 
   // Assert
   andThen(() => {
-    assert.equal(find(postId).length, 1);
-    assert.equal(find(postMessage).length, 1);
-    assert.equal(find(postTimestamp).length, 1);
-    assert.equal(find(postAuthor).length, 1);
+    assert.equal(find(postId).text().trim(), 'post_a');
+    assert.equal(find(postMessage).text().trim(), 'Post A');
+    assert.equal(find(postTimestamp).text().trim(), '12345');
+    assert.equal(find(postAuthor).text().trim(), 'User A');
   });
 });
 
@@ -40,10 +40,10 @@ test('should query records with path as direct representation of model', functio
 
   // Assert
   andThen(() => {
-    assert.equal(find(commentId).length, 1);
-    assert.equal(find(commentMessage).length, 1);
-    assert.equal(find(commentTimestamp).length, 1);
-    assert.equal(find(commentAuthor).length, 1);
+    assert.equal(find(commentId).text().trim(), 'comment_a');
+    assert.equal(find(commentMessage).text().trim(), 'Comment A');
+    assert.equal(find(commentTimestamp).text().trim(), '12345');
+    assert.equal(find(commentAuthor).text().trim(), 'User B');
   });
 });
 

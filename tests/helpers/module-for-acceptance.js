@@ -11,7 +11,7 @@ import unStubFirebase from 'dummy/tests/helpers/unstub-firebase';
 
 import getFixtureData from 'dummy/tests/helpers/fixture-data';
 
-const { RSVP: { Promise } } = Ember;
+const { RSVP: { resolve } } = Ember;
 
 export default function(name, options = {}) {
   module(name, {
@@ -34,7 +34,7 @@ export default function(name, options = {}) {
       unStubFirebase();
       destroyFirebaseApps();
 
-      return Promise.resolve(afterEach).then(() => destroyApp(this.application));
+      return resolve(afterEach).then(() => destroyApp(this.application));
     }
   });
 }

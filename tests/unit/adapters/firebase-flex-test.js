@@ -120,7 +120,7 @@ test('should push realtime changes to store', async function(assert) {
   assert.ok(spy.calledOnce);
 });
 
-test('should track Firebase listeners when not in FastBoot', async function(assert) {
+test('should track Firebase listeners without path when not in FastBoot', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -142,7 +142,33 @@ test('should track Firebase listeners when not in FastBoot', async function(asse
   const result = adapter.get('trackedListeners');
 
   // Assert
-  assert.deepEqual(result, { '/posts/post_c': { value: true } });
+  assert.deepEqual(result, { 'posts/post_c': { value: true } });
+});
+
+test('should track Firebase listeners with path when not in FastBoot', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const serializedSnapshot = {
+    '/comments/post_a/comment_c/message': 'Message',
+    '/comments/post_a/comment_c/timestamp': 12345,
+  };
+  const adapter = this.subject({
+    firebase: this.ref,
+    serialize: sinon.stub().returns(serializedSnapshot),
+  });
+
+  // Act
+  await adapter.createRecord(this.store, { modelName: 'comment' }, {
+    id: 'comment_a',
+    message: 'Message',
+    timestamp: 12345,
+    adapterOptions: { path: 'comments/post_a' },
+  });
+  const result = adapter.get('trackedListeners');
+
+  // Assert
+  assert.deepEqual(result, { 'comments/post_a/comment_a': { value: true } });
 });
 
 test('should not track Firebase listeners when in FastBoot', async function(assert) {
@@ -182,7 +208,7 @@ test('should not duplicate pushing realtime changes to store', async function(as
   const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
     firebase: this.ref,
-    trackedListeners: { '/posts/post_c': { value: true } },
+    trackedListeners: { 'posts/post_c': { value: true } },
     serialize: sinon.stub().returns(serializedSnapshot),
   });
 
@@ -334,7 +360,7 @@ test('should error when record does not exist', async function(assert) {
   // Act
   try {
     await adapter.findRecord(this.store, this.type, 'post_z');
-  } catch(e) {
+  } catch (e) {
     // Assert
     assert.ok(true);
   }
@@ -356,7 +382,7 @@ test('should push realtime changes to store', async function(assert) {
   assert.ok(spy.calledOnce);
 });
 
-test('should track Firebase listeners when not in FastBoot', async function(assert) {
+test('should track Firebase listeners without path when not in FastBoot', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -369,7 +395,25 @@ test('should track Firebase listeners when not in FastBoot', async function(asse
   const result = adapter.get('trackedListeners');
 
   // Arrange
-  assert.deepEqual(result, { '/posts/post_a': { value: true } });
+  assert.deepEqual(result, { 'posts/post_a': { value: true } });
+});
+
+test('should track Firebase listeners with path when not in FastBoot', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  await adapter.findRecord(this.store, { modelName: 'comment' }, 'comment_a', {
+    adapterOptions: { path: 'comments/post_a' },
+  });
+  const result = adapter.get('trackedListeners');
+
+  // Arrange
+  assert.deepEqual(result, { 'comments/post_a/comment_a': { value: true } });
 });
 
 test('should not track Firebase listeners when in FastBoot', async function(assert) {
@@ -396,7 +440,7 @@ test('should not duplicate pushing realtime changes to store', async function(as
   const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
     firebase: this.ref,
-    trackedListeners: { '/posts/post_a': { value: true } },
+    trackedListeners: { 'posts/post_a': { value: true } },
   });
 
   // Act
@@ -499,7 +543,7 @@ test('should error when finding all records for a model but nothing exists', asy
   // Act
   try {
     await adapter.findAll(this.store, { modelName: 'foo' });
-  } catch(e) {
+  } catch (e) {
     // Assert
     assert.ok(true);
   }
@@ -520,9 +564,9 @@ test('should track Firebase listeners when finding all records for a model and n
 
   // Arrange
   assert.deepEqual(result, {
-    '/posts': { child_added: true },
-    '/posts/post_a': { value: true },
-    '/posts/post_b': { value: true },
+    'posts': { child_added: true },
+    'posts/post_a': { value: true },
+    'posts/post_b': { value: true },
   });
 });
 
@@ -749,7 +793,7 @@ test('should error when no record matches the query params', async function(asse
     await adapter.queryRecord(this.store, this.type, {
       equalTo: 'foo',
     });
-  } catch(error) {
+  } catch (error) {
     // Assert
     assert.ok(true);
   }

@@ -74,6 +74,7 @@ export default Controller.extend({
 
     await store.queryRecord('post', {
       path: 'userFeeds/user_a',
+      isReference: true,
       equalTo: 'post_a',
     });
 
@@ -93,7 +94,8 @@ export default Controller.extend({
   async handleQueryWithPathClick() {
     const posts = await this.get('store').query('post', {
       cacheId: 'cache-id',
-      path: '/userFeeds/user_a',
+      path: 'userFeeds/user_a',
+      isReference: true,
       limitToFirst: 1,
     });
 
