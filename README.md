@@ -212,12 +212,6 @@ this.get('store').query('post', {
 
 ### Caveats
 
-#### `hasMany` doesn't work ####
-
-Without being able to limit how many data gets downloaded by `hasMany`, it's generally bad for Firebase apps.
-
-Alternatively, use [`hasFiltered`](#hasfiltered-relationship-not-really-a-relationship).
-
 #### Relationship won't get updated when firing `save()` ####
 
 As explained above, only the changed attributes will be saved when we call it. Ember Data currently doesn't provide a way to check if a relationship has changed. As a workaround, we need to fan-out the relationship to save it.
