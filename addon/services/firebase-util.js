@@ -340,8 +340,10 @@ export default Service.extend({
    * @return {Array.<Object>} Records
    */
   query(modelName, listenerId, path, option = {}) {
-    console.warn('DEPRECATION: You\'re using an old usage of firebase-util ' +
-        'query. See the README for the new usage');
+    if (typeof listenerId === 'string') {
+      console.warn('DEPRECATION: You\'re using an old usage of firebase-util ' +
+          'query. See the README for the new usage');
+    }
 
     return new RSVP.Promise((resolve, reject) => {
       let query = this.get('_queryCache')[listenerId];
