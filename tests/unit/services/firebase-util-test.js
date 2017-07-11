@@ -3,10 +3,12 @@ import { assign } from 'ember-platform';
 import wait from 'ember-test-helpers/wait';
 
 import createOfflineRef from 'dummy/tests/helpers/create-offline-ref';
+import destroyFirebaseApps from 'dummy/tests/helpers/destroy-firebase-apps';
 import sinon from 'sinon';
 import stubFirebase from 'dummy/tests/helpers/stub-firebase';
 import unStubFirebase from 'dummy/tests/helpers/unstub-firebase';
 
+import fixtureData from 'dummy/tests/helpers/fixture-data';
 import stubPromise from 'dummy/tests/helpers/stub-promise';
 
 const FIXTURE_DATA = {
@@ -26,7 +28,7 @@ moduleFor('service:firebase-util', 'Unit | Service | firebase util', {
   needs: [ 'service:firebase', 'service:firebase-app' ],
   beforeEach() {
     stubFirebase();
-    this.ref = createOfflineRef(FIXTURE_DATA);
+    this.ref = createOfflineRef(fixtureData);
   },
 
   afterEach() {
@@ -214,7 +216,142 @@ test('should update firebase data', function(assert) {
   });
 });
 
-test('should find record', function(assert) {
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | queryRecord', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(fixtureData());
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should return a record that matches the equalTo params', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const actual = await service.queryRecord('comments/post_a', {
+    equalTo: 'comment_b',
+  });
+
+  // Assert
+  assert.deepEqual(actual, {
+    id: 'comment_b',
+    message: 'Comment B',
+    timestamp: 12345,
+    author: 'user_b',
+  });
+});
+
+test('should return a record that matches the startAt params', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const actual = await service.queryRecord('comments/post_a', {
+    startAt: 'comment',
+  });
+
+  // Assert
+  assert.deepEqual(actual, {
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
+  });
+});
+
+test('should return a record that matches the endAt params', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const actual = await service.queryRecord('comments/post_a', {
+    endAt: 'comment_a',
+  });
+
+  // Assert
+  assert.deepEqual(actual, {
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
+  });
+});
+
+test('should error when record does not exist', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  try {
+    await service.queryRecord('users/unknown');
+  } catch (e) {
+    assert.ok(true);
+  }
+});
+
+test('should update in realtime when cacheId is provided', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const actual = await service.queryRecord('comments/post_a', {
+    equalTo: 'comment_a',
+  });
+
+  await service.update({ 'comments/post_a/comment_a/message': 'Foo' });
+
+  // Assert
+  assert.deepEqual(actual, {
+    id: 'comment_a',
+    message: 'Foo',
+    timestamp: 12345,
+    author: 'user_b',
+  });
+});
+
+test('should return cached records when available', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  await service.queryRecord('comments/post_a', {
+    cacheId: 'foo-cache',
+    equalTo: 'comment_a',
+  });
+
+  // `foo-cache` listener should already exists. Thus, even if we provide a
+  // path that doesn't exist, the cached record should be returned.
+  const actual = await service.queryRecord('unknown', { cacheId: 'foo-cache' });
+
+  // Assert
+  assert.deepEqual(actual, {
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
+  });
+});
+
+test('should find record', async function(assert) {
   assert.expect(1);
 
   // Arrange

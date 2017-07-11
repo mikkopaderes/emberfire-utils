@@ -117,6 +117,90 @@ export default Service.extend({
   },
 
   /**
+   * @param {string} path
+   * @param {Object} [options={}]
+   * @return {Promise.<Object>} Resolves to the record if it exists
+   */
+  queryRecord(path, options = {}) {
+    return new RSVP.Promise(bind(this, (resolve, reject) => {
+      let ref = this.get('firebase').child(path);
+
+      ref = this._setupQuerySortingAndFiltering(ref, options, true);
+
+      const onSuccess = bind(this, (snapshot) => {
+        if (snapshot.exists()) {
+          // Will always loop once because of the forced limitTo* 1
+          snapshot.forEach((child) => {
+            const record = this._serialize(child.key, child.val());
+
+            resolve(record);
+          });
+        } else {
+          reject();
+        }
+      });
+
+      const onError = bind(this, (error) => {
+        reject(error);
+      });
+
+      if (options.hasOwnProperty('cacheId')) {
+        // TODO
+      } else {
+        ref.once('value', onSuccess, onError);
+      }
+    }));
+  },
+
+  /**
+   * @param {firebase.database.DataSnapshot} ref
+   * @param {Object} query
+   * @param {boolean} isForcingLimitToOne
+   * @return {firebase.database.DataSnapshot} Reference with sort/filters
+   * @private
+   */
+  _setupQuerySortingAndFiltering(ref, query, isForcingLimitToOne) {
+    if (!query.hasOwnProperty('orderBy')) {
+      query.orderBy = 'id';
+    }
+
+    if (query.orderBy === 'id') {
+      ref = ref.orderByKey();
+    } else if (query.orderBy === '.value') {
+      ref = ref.orderByValue();
+    } else {
+      ref = ref.orderByChild(query.orderBy);
+    }
+
+    if (isForcingLimitToOne) {
+      if (query.hasOwnProperty('limitToFirst') ||
+          query.hasOwnProperty('limitToLast')) {
+        if (query.hasOwnProperty('limitToFirst')) {
+          query.limitToFirst = 1;
+        } else {
+          query.limitToLast = 1;
+        }
+      } else {
+        query.limitToFirst = 1;
+      }
+    }
+
+    [
+      'startAt',
+      'endAt',
+      'equalTo',
+      'limitToFirst',
+      'limitToLast',
+    ].forEach((type) => {
+      if (query.hasOwnProperty(type)) {
+        ref = ref[type](query[type]);
+      }
+    });
+
+    return ref;
+  },
+
+  /**
    * Finds record from a Firebase path. Any changes made under the
    * Firebase path will be synchronized in realtime.
    *
@@ -128,6 +212,9 @@ export default Service.extend({
    * @return {Promise.<Object>} Resolves to the record
    */
   findRecord(listenerId, path) {
+    console.warn('DEPRECATION: firebase-util findRecord() will be removed in ' +
+        'favor of firebase-util queryRecord()');
+
     return new RSVP.Promise((resolve, reject) => {
       let query = this.get('_queryCache')[listenerId];
 
@@ -204,8 +291,8 @@ export default Service.extend({
    * @return {Array.<Object>} Records
    */
   query(modelName, listenerId, path, option = {}) {
-    console.warn('DEPRECATION: firebase-util query() will be removed in ' +
-        'favor of firebase-flex adapter query()');
+    console.warn('DEPRECATION: You\'re using an old usage of firebase-util ' +
+        'query. See the README for the new usage');
 
     return new RSVP.Promise((resolve, reject) => {
       let query = this.get('_queryCache')[listenerId];
