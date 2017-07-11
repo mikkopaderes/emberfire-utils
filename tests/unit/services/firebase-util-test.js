@@ -11,7 +11,7 @@ import unStubFirebase from 'dummy/tests/helpers/unstub-firebase';
 import fixtureData from 'dummy/tests/helpers/fixture-data';
 import stubPromise from 'dummy/tests/helpers/stub-promise';
 
-const FIXTURE_DATA = {
+const oldFixtureData = {
   'users': {
     'foo': {
       'photoURL': 'foo.jpg',
@@ -24,18 +24,6 @@ const FIXTURE_DATA = {
   },
 };
 
-moduleFor('service:firebase-util', 'Unit | Service | firebase util', {
-  needs: [ 'service:firebase', 'service:firebase-app' ],
-  beforeEach() {
-    stubFirebase();
-    this.ref = createOfflineRef(fixtureData);
-  },
-
-  afterEach() {
-    unStubFirebase();
-  },
-});
-
 /**
  * Stub for `this.store.findRecord()`
  *
@@ -46,23 +34,64 @@ moduleFor('service:firebase-util', 'Unit | Service | firebase util', {
 function findRecordStub(model, id) {
   let record = { id: id };
 
-  return stubPromise(true, assign(record, FIXTURE_DATA.users[id]));
+  return stubPromise(true, assign(record, oldFixtureData.users[id]));
 }
 
-test('should upload file', function(assert) {
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | generateIdForRecord', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(fixtureData());
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should return generated push ID', function(assert) {
   assert.expect(1);
 
   // Arrange
-  const FILE = new Blob();
-  const METADATA = { contentType: 'image/jpeg' };
-  let stub = sinon.stub().returns({
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const result = service.generateIdForRecord('users');
+
+  // Assert
+  assert.ok(result);
+});
+
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | uploadFile', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(fixtureData());
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should upload file', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const file = new Blob();
+  const metadata = { contentType: 'image/jpeg' };
+  const stub = sinon.stub().returns({
     snapshot: { downloadURL: 'foo.jpg' },
 
     on(stateChanged, callbackState, callbackError, callbackSuccess) {
       callbackSuccess();
     },
   });
-  let service = this.subject({
+  const service = this.subject({
     firebaseApp: {
       storage: sinon.stub().returns({
         ref: sinon.stub().returns({ put: stub }),
@@ -71,23 +100,22 @@ test('should upload file', function(assert) {
   });
 
   // Act
-  service.uploadFile('images/foo', FILE, METADATA).then(() => {
-    // Assert
-    assert.ok(stub.calledWith(FILE, METADATA));
-  });
+  await service.uploadFile('images/foo', file, metadata);
+
+  // Assert
+  assert.ok(stub.calledWith(file, metadata));
 });
 
-test('should return the download url when successfully uploading a blob', function(assert) {
+test('should return the download url when successfully uploading a blob', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = 'foo.jpg';
-  let service = this.subject({
+  const service = this.subject({
     firebaseApp: {
       storage: sinon.stub().returns({
         ref: sinon.stub().returns({
           put: sinon.stub().returns({
-            snapshot: { downloadURL: EXPECTED },
+            snapshot: { downloadURL: 'foo.jpg' },
 
             on(stateChanged, callbackState, callbackError, callbackSuccess) {
               callbackSuccess();
@@ -99,24 +127,24 @@ test('should return the download url when successfully uploading a blob', functi
   });
 
   // Act
-  service.uploadFile('images/foo', new Blob()).then((actual) => {
-    // Assert
-    assert.equal(actual, EXPECTED);
-  });
+  const result = await service.uploadFile('images/foo', new Blob());
+
+  // Assert
+  assert.equal(result, 'foo.jpg');
 });
 
-test('should call state change callback when available', function(assert) {
+test('should call state change callback when available', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const SNAPSHOT = { state: 'progress' };
-  let spy = sinon.spy();
-  let service = this.subject({
+  const snapshot = { state: 'progress' };
+  const spy = sinon.spy();
+  const service = this.subject({
     firebaseApp: {
       storage: sinon.stub().returns({
         ref: sinon.stub().returns({
           put: sinon.stub().returns({
-            snapshot: SNAPSHOT,
+            snapshot: snapshot,
 
             on(stateChanged, callbackState) {
               callbackState(this.snapshot);
@@ -131,14 +159,14 @@ test('should call state change callback when available', function(assert) {
   service.uploadFile('images/foo', new Blob(), {}, spy);
 
   // Assert
-  assert.ok(spy.calledWith(SNAPSHOT));
+  assert.ok(spy.calledWith(snapshot));
 });
 
-test('should reject promise when uploading a blob is unsuccessful', function(assert) {
+test('should reject promise when uploading a blob is unsuccessful', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  let service = this.subject({
+  const service = this.subject({
     firebaseApp: {
       storage: sinon.stub().returns({
         ref: sinon.stub().returns({
@@ -155,17 +183,33 @@ test('should reject promise when uploading a blob is unsuccessful', function(ass
   });
 
   // Act
-  service.uploadFile('images/foo', new Blob()).catch(() => {
+  try {
+    await service.uploadFile('images/foo', new Blob());
+  } catch (e) {
     // Assert
     assert.ok(true);
-  });
+  }
 });
 
-test('should delete a file', function(assert) {
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | deleteFile', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(fixtureData());
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should delete a file', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  let service = this.subject({
+  const service = this.subject({
     firebaseApp: {
       storage: sinon.stub().returns({
         refFromURL: sinon.stub().returns({
@@ -176,16 +220,17 @@ test('should delete a file', function(assert) {
   });
 
   // Act
-  service.deleteFile('images/foo.jpg').then(() => {
-    assert.ok(true);
-  });
+  await service.deleteFile('images/foo.jpg');
+
+  // Assert
+  assert.ok(true);
 });
 
-test('should reject promise when deleting a file fails', function(assert) {
+test('should reject promise when deleting a file fails', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  let service = this.subject({
+  const service = this.subject({
     firebaseApp: {
       storage: sinon.stub().returns({
         refFromURL: sinon.stub().returns({
@@ -196,24 +241,41 @@ test('should reject promise when deleting a file fails', function(assert) {
   });
 
   // Act
-  service.deleteFile('images/foo.jpg').catch(() => {
+  try {
+    await service.deleteFile('images/foo.jpg');
+  } catch (e) {
+    // Assert
     assert.ok(true);
-  });
+  }
 });
 
-test('should update firebase data', function(assert) {
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | update', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(fixtureData());
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should update firebase data', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = 'foobar.jpg';
-  let service = this.subject({ firebase: this.ref });
+  const service = this.subject({ firebase: this.ref });
 
   // Act
-  service.update({ 'users/foo/photoURL': 'foobar.jpg' });
-  this.ref.child('users/foo/photoURL').once('value').then((snapshot) => {
-    // Assert
-    assert.equal(snapshot.val(), EXPECTED);
-  });
+  await service.update({ 'users/user_a/name': 'Foo' });
+
+  const snapshot = await this.ref.child('users/user_a/name').once('value');
+
+  // Assert
+  assert.equal(snapshot.val(), 'Foo');
 });
 
 moduleFor('service:firebase-util', 'Unit | Service | firebase util | queryRecord', {
@@ -237,12 +299,12 @@ test('should return a record that matches the equalTo params', async function(as
   const service = this.subject({ firebase: this.ref });
 
   // Act
-  const actual = await service.queryRecord('comments/post_a', {
+  const result = await service.queryRecord('comments/post_a', {
     equalTo: 'comment_b',
   });
 
   // Assert
-  assert.deepEqual(actual, {
+  assert.deepEqual(result, {
     id: 'comment_b',
     message: 'Comment B',
     timestamp: 12345,
@@ -257,12 +319,12 @@ test('should return a record that matches the startAt params', async function(as
   const service = this.subject({ firebase: this.ref });
 
   // Act
-  const actual = await service.queryRecord('comments/post_a', {
+  const result = await service.queryRecord('comments/post_a', {
     startAt: 'comment',
   });
 
   // Assert
-  assert.deepEqual(actual, {
+  assert.deepEqual(result, {
     id: 'comment_a',
     message: 'Comment A',
     timestamp: 12345,
@@ -277,12 +339,12 @@ test('should return a record that matches the endAt params', async function(asse
   const service = this.subject({ firebase: this.ref });
 
   // Act
-  const actual = await service.queryRecord('comments/post_a', {
+  const result = await service.queryRecord('comments/post_a', {
     endAt: 'comment_a',
   });
 
   // Assert
-  assert.deepEqual(actual, {
+  assert.deepEqual(result, {
     id: 'comment_a',
     message: 'Comment A',
     timestamp: 12345,
@@ -311,14 +373,15 @@ test('should update in realtime when cacheId is provided', async function(assert
   const service = this.subject({ firebase: this.ref });
 
   // Act
-  const actual = await service.queryRecord('comments/post_a', {
+  const result = await service.queryRecord('comments/post_a', {
+    cacheId: 'cache_id',
     equalTo: 'comment_a',
   });
 
   await service.update({ 'comments/post_a/comment_a/message': 'Foo' });
 
   // Assert
-  assert.deepEqual(actual, {
+  assert.deepEqual(result, {
     id: 'comment_a',
     message: 'Foo',
     timestamp: 12345,
@@ -340,10 +403,10 @@ test('should return cached records when available', async function(assert) {
 
   // `foo-cache` listener should already exists. Thus, even if we provide a
   // path that doesn't exist, the cached record should be returned.
-  const actual = await service.queryRecord('unknown', { cacheId: 'foo-cache' });
+  const result = await service.queryRecord('unknown', { cacheId: 'foo-cache' });
 
   // Assert
-  assert.deepEqual(actual, {
+  assert.deepEqual(result, {
     id: 'comment_a',
     message: 'Comment A',
     timestamp: 12345,
@@ -351,12 +414,26 @@ test('should return cached records when available', async function(assert) {
   });
 });
 
-test('should find record', async function(assert) {
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | findRecord', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(oldFixtureData);
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should return record', async function(assert) {
   assert.expect(1);
 
   // Arrange
   const EXPECTED = { id: 'foo', photoURL: 'foo.jpg', username: 'bar' };
-  let service = this.subject({ firebase: this.ref });
+  const service = this.subject({ firebase: this.ref });
 
   // Act
   service.findRecord('id', 'users/foo').then((actual) => {
@@ -370,7 +447,7 @@ test('should return an empty object when finding a record that does not exist', 
 
   // Arrange
   const EXPECTED = {};
-  let service = this.subject({ firebase: this.ref });
+  const service = this.subject({ firebase: this.ref });
 
   // Act
   service.findRecord('id', 'users/unknown').then((actual) => {
@@ -384,7 +461,7 @@ test('should pick up changes on find record', function(assert) {
 
   // Arrange
   const EXPECTED = { id: 'foo', photoURL: 'foobar.jpg', username: 'bar' };
-  let service = this.subject({ firebase: this.ref });
+  const service = this.subject({ firebase: this.ref });
 
   // Act
   let actual;
@@ -424,7 +501,7 @@ test('should return cached records on find record when available', function(asse
 
   // Arrange
   const EXPECTED = { id: 'foo', photoURL: 'foo.jpg', username: 'bar' };
-  let service = this.subject({ firebase: this.ref });
+  const service = this.subject({ firebase: this.ref });
 
   // Act
   service.findRecord('id', 'users/foo').then(() => {
@@ -441,14 +518,28 @@ test('should keep track of find record changes', function(assert) {
   assert.expect(1);
 
   // Arrange
-  let service = this.subject({ firebase: this.ref });
-  let spy = sinon.spy(service, 'set');
+  const service = this.subject({ firebase: this.ref });
+  const spy = sinon.spy(service, 'set');
 
   // Act
   service.findRecord('id', 'users/foo');
 
   // Assert
   assert.ok(spy.calledWith('_queryCache.id'));
+});
+
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | findAll', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(oldFixtureData);
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
 });
 
 test('should find all records', function(assert) {
@@ -464,7 +555,7 @@ test('should find all records', function(assert) {
     photoURL: 'hello.jpg',
     username: 'world',
   }];
-  let service = this.subject({ firebase: this.ref });
+  const service = this.subject({ firebase: this.ref });
 
   // Act
   service.findAll('users').then((actual) => {
@@ -478,7 +569,7 @@ test('should return an empty array when finding all records that does not exist'
 
   // Arrange
   const EXPECTED = [];
-  let service = this.subject({ firebase: this.ref });
+  const service = this.subject({ firebase: this.ref });
 
   // Act
   service.findAll('id', 'unknown').then((actual) => {
@@ -492,13 +583,13 @@ test('should return an empty array when finding all records that does not exist'
 //   assert.expect(1);
 
 //   // Arrange
-//   let ref = new Object(this.ref);
+//   const ref = new Object(this.ref);
 
 //   ref.child = sinon.stub().returns({
 //     once: sinon.stub().returns(stubPromise(false))
 //   });
 
-//   let service = this.subject({firebase: ref});
+//   const service = this.subject({firebase: ref});
 
 //   // Act
 //   service.findAll('id', null).catch(() => {
@@ -506,6 +597,20 @@ test('should return an empty array when finding all records that does not exist'
 //     assert.ok(true);
 //   });
 // });
+
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | query', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(oldFixtureData);
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
 
 // Order queries doesn't work in MockFirebase.
 // See: https://github.com/katowulf/mockfirebase/pull/61
@@ -752,44 +857,42 @@ test('should request for the next limitToLast records', function(assert) {
   });
 });
 
-test('should return true when checking if record exists and it does', function(assert) {
-  assert.expect(1);
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | isRecordExisting', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
 
-  // Arrange
-  const EXPECTED = true;
-  let service = this.subject({ firebase: this.ref });
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(fixtureData());
+  },
 
-  // Act
-  service.isRecordExisting('users/foo').then((actual) => {
-    // Assert
-    assert.equal(actual, EXPECTED);
-  });
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
 });
 
-test('should return false when checking if record exists and it does not', function(assert) {
+test('should return true when record exists', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = false;
-  let service = this.subject({ firebase: this.ref });
+  const service = this.subject({ firebase: this.ref });
 
   // Act
-  service.isRecordExisting('users/unknown').then((actual) => {
-    // Assert
-    assert.equal(actual, EXPECTED);
-  });
-});
-
-test('should return generated push ID', function(assert) {
-  assert.expect(1);
-
-  // Arrange
-  let result;
-  let service = this.subject({ firebase: this.ref });
-
-  // Act
-  result = service.generateIdForRecord('users');
+  const result = await service.isRecordExisting('users/user_a');
 
   // Assert
-  assert.ok(result);
+  assert.equal(result, true);
+});
+
+test('should return false when record does not exist', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const result = await service.isRecordExisting('users/unknown');
+
+  // Assert
+  assert.equal(result, false);
 });

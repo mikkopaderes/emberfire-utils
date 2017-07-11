@@ -43,6 +43,12 @@ export default Service.extend({
 
   /**
    * @type Object
+   * @default
+   */
+  trackedQueries: {},
+
+  /**
+   * @type Object
    * @private
    * @default null
    */
@@ -123,33 +129,76 @@ export default Service.extend({
    */
   queryRecord(path, options = {}) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
-      let ref = this.get('firebase').child(path);
+      const trackedQueries = this.get('trackedQueries');
+      const cacheId = options.cacheId;
 
-      ref = this._setupQuerySortingAndFiltering(ref, options, true);
-
-      const onSuccess = bind(this, (snapshot) => {
-        if (snapshot.exists()) {
-          // Will always loop once because of the forced limitTo* 1
-          snapshot.forEach((child) => {
-            const record = this._serialize(child.key, child.val());
-
-            resolve(record);
-          });
-        } else {
-          reject();
-        }
-      });
-
-      const onError = bind(this, (error) => {
-        reject(error);
-      });
-
-      if (options.hasOwnProperty('cacheId')) {
-        // TODO
+      if (trackedQueries.hasOwnProperty(cacheId)) {
+        resolve(trackedQueries[cacheId]['record']);
       } else {
-        ref.once('value', onSuccess, onError);
+        let ref = this.get('firebase').child(path);
+
+        ref = this._setupQuerySortingAndFiltering(ref, options, true);
+
+        const onSuccess = bind(this, (snapshot) => {
+          if (snapshot.exists()) {
+            // Will always loop once because of the forced limitTo* 1
+            snapshot.forEach((child) => {
+              const record = this._serialize(child.key, child.val());
+
+              if (cacheId) {
+                if (trackedQueries.hasOwnProperty(cacheId)) {
+                  this._updateTrackedQueryRecord(cacheId, record);
+                } else {
+                  resolve(this._trackQueryRecord(cacheId, options, record));
+                }
+              } else {
+                resolve(record);
+              }
+            });
+          } else {
+            reject();
+          }
+        });
+
+        const onError = bind(this, (error) => {
+          reject(error);
+        });
+
+        if (cacheId) {
+          ref.on('value', onSuccess, onError);
+        } else {
+          ref.once('value').then(onSuccess).catch(onError);
+        }
       }
     }));
+  },
+
+  /**
+   * @param {string} cacheId
+   * @param {Object} options
+   * @param {Object} record
+   * @return {Object} Tracked query record
+   * @private
+   */
+  _trackQueryRecord(cacheId, options, record) {
+    const trackedQueries = this.get('trackedQueries');
+    const query = assign({}, options, { record: record });
+
+    trackedQueries[cacheId] = query;
+
+    return trackedQueries[cacheId]['record'];
+  },
+
+  /**
+   * @param {string} cacheId
+   * @param {Object} record
+   * @private
+   */
+  _updateTrackedQueryRecord(cacheId, record) {
+    const trackedQueries = this.get('trackedQueries');
+    const query = trackedQueries[cacheId];
+
+    query.record = assign(query.record, record);
   },
 
   /**
