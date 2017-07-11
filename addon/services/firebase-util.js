@@ -105,6 +105,16 @@ export default Service.extend({
   },
 
   /**
+   * Generate a Firebase push ID for a path
+   *
+   * @param {string} path Firebase path
+   * @return {string} Push ID
+   */
+  generateIdForRecord(path) {
+    return this.get('firebase').child(path).push().key;
+  },
+
+  /**
    * Writes to firebase natively in fan-out style
    *
    * @param {Object} fanoutObject Fan-out object to write
@@ -174,219 +184,18 @@ export default Service.extend({
   },
 
   /**
-   * @param {string} cacheId
-   * @param {Object} options
-   * @param {Object} record
-   * @return {Object} Tracked query record
-   * @private
+   * @param {string} path
+   * @param {string} [options={}]
+   * @param {string} oldUsagePath
+   * @param {Object} [oldUsageOption={}]
+   * @return {Promise} Resolves to records matching the query
    */
-  _trackQueryRecord(cacheId, options, record) {
-    const trackedQueries = this.get('trackedQueries');
-    const query = assign({}, options, { record: record });
-
-    trackedQueries[cacheId] = query;
-
-    return trackedQueries[cacheId]['record'];
-  },
-
-  /**
-   * @param {string} cacheId
-   * @param {Object} record
-   * @private
-   */
-  _updateTrackedQueryRecord(cacheId, record) {
-    const trackedQueries = this.get('trackedQueries');
-    const query = trackedQueries[cacheId];
-
-    query.record = assign(query.record, record);
-  },
-
-  /**
-   * @param {firebase.database.DataSnapshot} ref
-   * @param {Object} query
-   * @param {boolean} isForcingLimitToOne
-   * @return {firebase.database.DataSnapshot} Reference with sort/filters
-   * @private
-   */
-  _setupQuerySortingAndFiltering(ref, query, isForcingLimitToOne) {
-    if (!query.hasOwnProperty('orderBy')) {
-      query.orderBy = 'id';
-    }
-
-    if (query.orderBy === 'id') {
-      ref = ref.orderByKey();
-    } else if (query.orderBy === '.value') {
-      ref = ref.orderByValue();
+  query(path, options = {}, oldUsagePath, oldUsageOption = {}) {
+    if (typeof options === 'string') {
+      return this._oldQuery(path, options, oldUsagePath, oldUsageOption);
     } else {
-      ref = ref.orderByChild(query.orderBy);
+      return this._newQuery(path, options);
     }
-
-    if (isForcingLimitToOne) {
-      if (query.hasOwnProperty('limitToFirst') ||
-          query.hasOwnProperty('limitToLast')) {
-        if (query.hasOwnProperty('limitToFirst')) {
-          query.limitToFirst = 1;
-        } else {
-          query.limitToLast = 1;
-        }
-      } else {
-        query.limitToFirst = 1;
-      }
-    }
-
-    [
-      'startAt',
-      'endAt',
-      'equalTo',
-      'limitToFirst',
-      'limitToLast',
-    ].forEach((type) => {
-      if (query.hasOwnProperty(type)) {
-        ref = ref[type](query[type]);
-      }
-    });
-
-    return ref;
-  },
-
-  /**
-   * Finds record from a Firebase path. Any changes made under the
-   * Firebase path will be synchronized in realtime.
-   *
-   * Similar to `store.findRecord()` except that this returns the record
-   * in a plain object rather than a `DS.Model`.
-   *
-   * @param {string} listenerId Firebase listener ID
-   * @param {string} path Path of records in Firebase
-   * @return {Promise.<Object>} Resolves to the record
-   */
-  findRecord(listenerId, path) {
-    console.warn('DEPRECATION: firebase-util findRecord() will be removed in ' +
-        'favor of firebase-util queryRecord()');
-
-    return new RSVP.Promise((resolve, reject) => {
-      let query = this.get('_queryCache')[listenerId];
-
-      if (query) {
-        run(null, resolve, query.record);
-      } else {
-        let ref = this.get('firebase').child(path);
-
-        query = { ref: ref, path: path, record: {} };
-        this.set(`_queryCache.${listenerId}`, query);
-
-        ref.on('value', bind(this, (snapshot) => {
-          if (snapshot.exists()) {
-            this._assignObject(
-                query.record,
-                this._serialize(snapshot.key, snapshot.val()));
-            resolve(query.record);
-          } else {
-            this._nullifyObject(query.record);
-            resolve(query.record);
-          }
-        }), bind(this, (error) => {
-          this._nullifyObject(query.record);
-          reject(error);
-        }));
-      }
-    });
-  },
-
-  /**
-   * Finds all data from a Firebase path.
-   *
-   * Typically, it's bad practice to do a `value` listener on a path
-   * that has multiple records due to the potential to download huge
-   * amounts of data whenever a property changes. Thus, any changes
-   * made under the Firebase path **won't** be synchronized in
-   * realtime.
-   *
-   * Similar to `store.findAll()` except that this returns the records
-   * in plain objects rather than a `DS.Model`.
-   *
-   * @param {string} path Path of records in Firebase
-   * @return {Promise.<Array>} Resolves to all records
-   */
-  findAll(path) {
-    return new RSVP.Promise((resolve, reject) => {
-      let ref = this.get('firebase').child(path);
-
-      ref.once('value').then(bind(this, (snapshot) => {
-        let records = [];
-
-        if (snapshot.exists()) {
-          snapshot.forEach((child) => {
-            records.push(this._serialize(child.key, child.val()));
-          });
-        }
-
-        resolve(records);
-      })).catch(bind(this, (error) => reject(error)));
-    });
-  },
-
-  /**
-   * Queries data from a Firebase path. Any changes made under the
-   * Firebase path will be synchronized in realtime.
-   *
-   * This has the benefit of providing data for infinite scrolling
-   * through the `firebaseUtil.next()` function.
-   *
-   * @param {string} modelName Model name of the records to query
-   * @param {string} listenerId Firebase listener ID
-   * @param {string} path Path of records in Firebase
-   * @param {Object} [option={}] Query options
-   * @return {Array.<Object>} Records
-   */
-  query(modelName, listenerId, path, option = {}) {
-    if (typeof listenerId === 'string') {
-      console.warn('DEPRECATION: You\'re using an old usage of firebase-util ' +
-          'query. See the README for the new usage');
-    }
-
-    return new RSVP.Promise((resolve, reject) => {
-      let query = this.get('_queryCache')[listenerId];
-
-      if (!query) {
-        let ref = this.get('firebase').child(path);
-
-        query = {
-          ref: ref,
-          path: path,
-          modelName: modelName,
-          willUnshiftRecord: false,
-          records: new A(),
-        };
-        option.orderBy = option.hasOwnProperty('orderBy') ?
-            option.orderBy : 'id';
-        assign(query, option);
-        this.set(`_queryCache.${listenerId}`, query);
-        this._setQuerySortingAndFiltering(query);
-
-        // Set an active listener to cache the data for child_added.
-        // The child_added listener will turn this off later.
-        query.ref.on('value', () => {});
-        query.ref.once('value').then(bind(this, (snapshot) => {
-          if (snapshot.exists()) {
-            let requests = Object.keys(snapshot.val()).map((key) => {
-              return this.get('store').findRecord(query.modelName, key);
-            });
-
-            RSVP.all(requests).then(bind(this, (records) => {
-              records.forEach((record) => query.records.pushObject(record));
-              this._setQueryListeners(query);
-              resolve(query.records);
-            }));
-          } else {
-            this._setQueryListeners(query);
-            resolve(query.records);
-          }
-        })).catch(bind(this, (error) => reject(error)));
-      } else {
-        run(null, resolve, query.records);
-      }
-    });
   },
 
   /**
@@ -467,13 +276,80 @@ export default Service.extend({
   },
 
   /**
-   * Generate a Firebase push ID for a path
+   * Finds record from a Firebase path. Any changes made under the
+   * Firebase path will be synchronized in realtime.
    *
-   * @param {string} path Firebase path
-   * @return {string} Push ID
+   * Similar to `store.findRecord()` except that this returns the record
+   * in a plain object rather than a `DS.Model`.
+   *
+   * @param {string} listenerId Firebase listener ID
+   * @param {string} path Path of records in Firebase
+   * @return {Promise.<Object>} Resolves to the record
    */
-  generateIdForRecord(path) {
-    return this.get('firebase').child(path).push().key;
+  findRecord(listenerId, path) {
+    console.warn('DEPRECATION: firebase-util findRecord() will be removed in ' +
+        'favor of firebase-util queryRecord()');
+
+    return new RSVP.Promise((resolve, reject) => {
+      let query = this.get('_queryCache')[listenerId];
+
+      if (query) {
+        run(null, resolve, query.record);
+      } else {
+        let ref = this.get('firebase').child(path);
+
+        query = { ref: ref, path: path, record: {} };
+        this.set(`_queryCache.${listenerId}`, query);
+
+        ref.on('value', bind(this, (snapshot) => {
+          if (snapshot.exists()) {
+            this._assignObject(
+                query.record,
+                this._serialize(snapshot.key, snapshot.val()));
+            resolve(query.record);
+          } else {
+            this._nullifyObject(query.record);
+            resolve(query.record);
+          }
+        }), bind(this, (error) => {
+          this._nullifyObject(query.record);
+          reject(error);
+        }));
+      }
+    });
+  },
+
+  /**
+   * Finds all data from a Firebase path.
+   *
+   * Typically, it's bad practice to do a `value` listener on a path
+   * that has multiple records due to the potential to download huge
+   * amounts of data whenever a property changes. Thus, any changes
+   * made under the Firebase path **won't** be synchronized in
+   * realtime.
+   *
+   * Similar to `store.findAll()` except that this returns the records
+   * in plain objects rather than a `DS.Model`.
+   *
+   * @param {string} path Path of records in Firebase
+   * @return {Promise.<Array>} Resolves to all records
+   */
+  findAll(path) {
+    return new RSVP.Promise((resolve, reject) => {
+      let ref = this.get('firebase').child(path);
+
+      ref.once('value').then(bind(this, (snapshot) => {
+        let records = [];
+
+        if (snapshot.exists()) {
+          snapshot.forEach((child) => {
+            records.push(this._serialize(child.key, child.val()));
+          });
+        }
+
+        resolve(records);
+      })).catch(bind(this, (error) => reject(error)));
+    });
   },
 
   /**
@@ -518,56 +394,79 @@ export default Service.extend({
   },
 
   /**
-   * Polyfill workaround for `Object.assign` on an `Ember.Object` object
-   * property.
-   *
-   * @param {Object} objectToUpdate Object to update
-   * @param {Object} objectToMerge Object to merge
+   * @param {string} cacheId
+   * @param {Object} options
+   * @param {Object} record
+   * @return {Object} Tracked query record
    * @private
    */
-  _assignObject(objectToUpdate, objectToMerge) {
-    for (let key in objectToMerge) {
-      if (Object.prototype.hasOwnProperty.call(objectToMerge, key)) {
-        set(objectToUpdate, key, objectToMerge[key]);
-      }
-    }
+  _trackQueryRecord(cacheId, options, record) {
+    const trackedQueries = this.get('trackedQueries');
+    const query = assign({}, options, { record: record });
+
+    trackedQueries[cacheId] = query;
+
+    return trackedQueries[cacheId]['record'];
   },
 
   /**
-   * Set all the object key's value to null
-   *
-   * @param {Object} object Object to clear
+   * @param {string} cacheId
+   * @param {Object} record
    * @private
    */
-  _nullifyObject(object) {
-    for (let key in object) {
-      if (Object.prototype.hasOwnProperty.call(object, key)) {
-        set(object, key, null);
-      }
-    }
+  _updateTrackedQueryRecord(cacheId, record) {
+    const trackedQueries = this.get('trackedQueries');
+    const query = trackedQueries[cacheId];
+
+    query.record = assign(query.record, record);
   },
 
   /**
-   * Set the query sorting and filtering
-   *
-   * @param {Object} query Query object
+   * @param {firebase.database.DataSnapshot} ref
+   * @param {Object} query
+   * @param {boolean} isForcingLimitToOne
+   * @return {firebase.database.DataSnapshot} Reference with sort/filters
    * @private
    */
-  _setQuerySortingAndFiltering(query) {
+  _setupQuerySortingAndFiltering(ref, query, isForcingLimitToOne) {
+    if (!query.hasOwnProperty('orderBy')) {
+      query.orderBy = 'id';
+    }
+
     if (query.orderBy === 'id') {
-      query.ref = query.ref.orderByKey();
+      ref = ref.orderByKey();
     } else if (query.orderBy === '.value') {
-      query.ref = query.ref.orderByValue();
+      ref = ref.orderByValue();
     } else {
-      query.ref = query.ref.orderByChild(query.orderBy);
+      ref = ref.orderByChild(query.orderBy);
     }
 
-    [ 'startAt', 'endAt', 'equalTo', 'limitToFirst', 'limitToLast' ].forEach(
-        (type) => {
-          if (query.hasOwnProperty(type)) {
-            query.ref = query.ref[type](query[type]);
-          }
-        });
+    if (isForcingLimitToOne) {
+      if (query.hasOwnProperty('limitToFirst') ||
+          query.hasOwnProperty('limitToLast')) {
+        if (query.hasOwnProperty('limitToFirst')) {
+          query.limitToFirst = 1;
+        } else {
+          query.limitToLast = 1;
+        }
+      } else {
+        query.limitToFirst = 1;
+      }
+    }
+
+    [
+      'startAt',
+      'endAt',
+      'equalTo',
+      'limitToFirst',
+      'limitToLast',
+    ].forEach((type) => {
+      if (query.hasOwnProperty(type)) {
+        ref = ref[type](query[type]);
+      }
+    });
+
+    return ref;
   },
 
   /**
@@ -610,5 +509,170 @@ export default Service.extend({
         query.records.removeObject(record);
       }
     }), bind(this, query.records.clear));
+  },
+
+  /**
+   * Polyfill workaround for `Object.assign` on an `Ember.Object` object
+   * property.
+   *
+   * @param {Object} objectToUpdate Object to update
+   * @param {Object} objectToMerge Object to merge
+   * @private
+   */
+  _assignObject(objectToUpdate, objectToMerge) {
+    for (let key in objectToMerge) {
+      if (Object.prototype.hasOwnProperty.call(objectToMerge, key)) {
+        set(objectToUpdate, key, objectToMerge[key]);
+      }
+    }
+  },
+
+  /**
+   * Set all the object key's value to null
+   *
+   * @param {Object} object Object to clear
+   * @private
+   */
+  _nullifyObject(object) {
+    for (let key in object) {
+      if (Object.prototype.hasOwnProperty.call(object, key)) {
+        set(object, key, null);
+      }
+    }
+  },
+
+  /**
+   * @param {string} path
+   * @param {Object} options
+   * @return {Promise} Resolves to records that matches the query
+   * @private
+   */
+  _newQuery(path, options) {
+    return new RSVP.Promise(bind(this, (resolve, reject) => {
+      const trackedQueries = this.get('trackedQueries');
+      const cacheId = options.cacheId;
+
+      if (trackedQueries.hasOwnProperty(cacheId)) {
+        resolve(trackedQueries[cacheId]['records']);
+      } else {
+        let ref = this.get('firebase').child(path);
+
+        ref = this._setupQuerySortingAndFiltering(ref, options, true);
+
+        const onSuccess = bind(this, (snapshot) => {
+          if (snapshot.exists()) {
+            snapshot.forEach((child) => {
+              // TODO
+            });
+
+            // TODO: Remove this
+            resolve([]);
+          } else {
+            reject();
+          }
+        });
+
+        const onError = bind(this, (error) => {
+          reject(error);
+        });
+
+        ref.on('value', onSuccess, onError);
+      }
+    }));
+  },
+
+  /**
+   * @param {string} modelName
+   * @param {string} listenerId
+   * @param {string} path
+   * @param {Object} [option={}]
+   * @return {Promise} Resolves to records that matches the query
+   * @private
+   */
+  _oldQuery(modelName, listenerId, path, option = {}) {
+    console.warn('DEPRECATION: You\'re using an old usage of firebase-util ' +
+        'query. See the README for the new usage');
+
+    return new RSVP.Promise((resolve, reject) => {
+      let query = this.get('_queryCache')[listenerId];
+
+      if (!query) {
+        let ref = this.get('firebase').child(path);
+
+        query = {
+          ref: ref,
+          path: path,
+          modelName: modelName,
+          willUnshiftRecord: false,
+          records: new A(),
+        };
+        option.orderBy = option.hasOwnProperty('orderBy') ?
+            option.orderBy : 'id';
+        assign(query, option);
+        this.set(`_queryCache.${listenerId}`, query);
+        this._setQuerySortingAndFiltering(query);
+
+        // Set an active listener to cache the data for child_added.
+        // The child_added listener will turn this off later.
+        query.ref.on('value', () => {});
+        query.ref.once('value').then(bind(this, (snapshot) => {
+          if (snapshot.exists()) {
+            let requests = Object.keys(snapshot.val()).map((key) => {
+              return this.get('store').findRecord(query.modelName, key);
+            });
+
+            RSVP.all(requests).then(bind(this, (records) => {
+              records.forEach((record) => query.records.pushObject(record));
+              this._setQueryListeners(query);
+              resolve(query.records);
+            }));
+          } else {
+            this._setQueryListeners(query);
+            resolve(query.records);
+          }
+        })).catch(bind(this, (error) => reject(error)));
+      } else {
+        run(null, resolve, query.records);
+      }
+    });
+  },
+
+  /**
+   * @param {firebase.database.DataSnapshot} ref
+   * @param {string} cacheId
+   * @private
+   */
+  _setupQueryListListener(ref, cacheId) {
+    const fastboot = this.get('fastboot');
+
+    if (!fastboot || !fastboot.get('isFastBoot')) {
+      const trackedQueries = this.get('trackedQueries');
+      const query = trackedQueries[cacheId];
+      const onChildAdded = bind(this, (snapshot) => {
+        const record = this._serialize(snapshot.key, snapshot.val());
+
+        if (query.hasOwnProperty('limitToLast')) {
+          if (!query.record.findBy('id', snapshot.key)) {
+            query.record.unshiftObject(record);
+          }
+        } else {
+          query.record.addObject(record);
+        }
+      });
+
+      ref.on('child_added', onChildAdded);
+
+      // TODO: Add child_changed
+
+      const onChildRemoved = bind(this, (snapshot) => {
+        const record = query.record.findBy('id', snapshot.key);
+
+        if (record) {
+          query.record.removeObject(record);
+        }
+      });
+
+      ref.on('child_removed', onChildRemoved);
+    }
   },
 });

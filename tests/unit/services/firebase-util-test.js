@@ -389,7 +389,7 @@ test('should update in realtime when cacheId is provided', async function(assert
   });
 });
 
-test('should return cached records when available', async function(assert) {
+test('should return cached record when available', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -397,13 +397,13 @@ test('should return cached records when available', async function(assert) {
 
   // Act
   await service.queryRecord('comments/post_a', {
-    cacheId: 'foo-cache',
+    cacheId: 'cache_id',
     equalTo: 'comment_a',
   });
 
-  // `foo-cache` listener should already exists. Thus, even if we provide a
+  // `cache_id` listener should already exists. Thus, even if we provide a
   // path that doesn't exist, the cached record should be returned.
-  const result = await service.queryRecord('unknown', { cacheId: 'foo-cache' });
+  const result = await service.queryRecord('unknown', { cacheId: 'cache_id' });
 
   // Assert
   assert.deepEqual(result, {
@@ -414,12 +414,12 @@ test('should return cached records when available', async function(assert) {
   });
 });
 
-moduleFor('service:firebase-util', 'Unit | Service | firebase util | findRecord', {
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | query (new usage)', {
   needs: [ 'service:firebase', 'service:firebase-app' ],
 
   beforeEach() {
     stubFirebase();
-    this.ref = createOfflineRef(oldFixtureData);
+    this.ref = createOfflineRef(fixtureData());
   },
 
   afterEach() {
@@ -428,177 +428,285 @@ moduleFor('service:firebase-util', 'Unit | Service | firebase util | findRecord'
   },
 });
 
-test('should return record', async function(assert) {
+// Order queries doesn't work in MockFirebase.
+// See: https://github.com/katowulf/mockfirebase/pull/61
+test('should return records ordered by key', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = { id: 'foo', photoURL: 'foo.jpg', username: 'bar' };
   const service = this.subject({ firebase: this.ref });
 
   // Act
-  service.findRecord('id', 'users/foo').then((actual) => {
-    // Assert
-    assert.deepEqual(actual, EXPECTED);
-  });
-});
-
-test('should return an empty object when finding a record that does not exist', function(assert) {
-  assert.expect(1);
-
-  // Arrange
-  const EXPECTED = {};
-  const service = this.subject({ firebase: this.ref });
-
-  // Act
-  service.findRecord('id', 'users/unknown').then((actual) => {
-    // Assert
-    assert.deepEqual(actual, EXPECTED);
-  });
-});
-
-test('should pick up changes on find record', function(assert) {
-  assert.expect(1);
-
-  // Arrange
-  const EXPECTED = { id: 'foo', photoURL: 'foobar.jpg', username: 'bar' };
-  const service = this.subject({ firebase: this.ref });
-
-  // Act
-  let actual;
-
-  service.findRecord('id', 'users/foo').then((record) => {
-    actual = record;
-
-    service.update({ 'users/foo/photoURL': 'foobar.jpg' });
-  });
+  const result = await service.query('comments/post_a');
 
   // Assert
-  return wait().then(() => assert.deepEqual(actual, EXPECTED));
-});
-
-// TODO: Find a good way to test this
-// test('should reject when finding record fails', function(assert) {
-//   assert.expect(1);
-
-//   // Arrange
-//   let ref = new Object(this.ref);
-
-//   ref.child = sinon.stub().returns({
-//     on: sinon.stub().returns(stubPromise(false))
-//   });
-
-//   let service = this.subject({firebase: ref});
-
-//   // Act
-//   service.findRecord('id', 'users/foo').catch(() => {
-//     // Assert
-//     assert.ok(true);
-//   });
-// });
-
-test('should return cached records on find record when available', function(assert) {
-  assert.expect(1);
-
-  // Arrange
-  const EXPECTED = { id: 'foo', photoURL: 'foo.jpg', username: 'bar' };
-  const service = this.subject({ firebase: this.ref });
-
-  // Act
-  service.findRecord('id', 'users/foo').then(() => {
-    // `id` listener should already exists. Thus, even if we provide a
-    // path that doesn't exist, the cached record should be returned.
-    service.findRecord('id', 'foo').then((actual) => {
-      // Assert
-      assert.deepEqual(actual, EXPECTED);
-    });
-  });
-});
-
-test('should keep track of find record changes', function(assert) {
-  assert.expect(1);
-
-  // Arrange
-  const service = this.subject({ firebase: this.ref });
-  const spy = sinon.spy(service, 'set');
-
-  // Act
-  service.findRecord('id', 'users/foo');
-
-  // Assert
-  assert.ok(spy.calledWith('_queryCache.id'));
-});
-
-moduleFor('service:firebase-util', 'Unit | Service | firebase util | findAll', {
-  needs: [ 'service:firebase', 'service:firebase-app' ],
-
-  beforeEach() {
-    stubFirebase();
-    this.ref = createOfflineRef(oldFixtureData);
-  },
-
-  afterEach() {
-    unStubFirebase();
-    destroyFirebaseApps();
-  },
-});
-
-test('should find all records', function(assert) {
-  assert.expect(1);
-
-  // Arrange
-  const EXPECTED = [{
-    id: 'foo',
-    photoURL: 'foo.jpg',
-    username: 'bar',
+  assert.deepEqual(result, [{
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
   }, {
-    id: 'hello',
-    photoURL: 'hello.jpg',
-    username: 'world',
-  }];
-  const service = this.subject({ firebase: this.ref });
-
-  // Act
-  service.findAll('users').then((actual) => {
-    // Assert
-    assert.deepEqual(actual, EXPECTED);
-  });
+    id: 'comment_b',
+    message: 'Comment B',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
 });
 
-test('should return an empty array when finding all records that does not exist', function(assert) {
+test('should return records matching the equalTo param', async function(assert) {
   assert.expect(1);
 
   // Arrange
-  const EXPECTED = [];
   const service = this.subject({ firebase: this.ref });
 
   // Act
-  service.findAll('id', 'unknown').then((actual) => {
-    // Assert
-    assert.deepEqual(actual, EXPECTED);
+  const result = await service.query('comments/post_a', {
+    equalTo: 'comment_a',
   });
+
+  // Assert
+  assert.deepEqual(result, [{
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
 });
 
-// TODO: Find a good way to test this
-// test('should reject when finding all records fails', function(assert) {
-//   assert.expect(1);
+test('should return records matching the startAt param', async function(assert) {
+  assert.expect(1);
 
-//   // Arrange
-//   const ref = new Object(this.ref);
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
 
-//   ref.child = sinon.stub().returns({
-//     once: sinon.stub().returns(stubPromise(false))
-//   });
+  // Act
+  const result = await service.query('comments/post_a', {
+    startAt: 'comment',
+  });
 
-//   const service = this.subject({firebase: ref});
+  // Assert
+  assert.deepEqual(result, [{
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
+  }, {
+    id: 'comment_b',
+    message: 'Comment B',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
+});
 
-//   // Act
-//   service.findAll('id', null).catch(() => {
-//     // Assert
-//     assert.ok(true);
-//   });
-// });
+test('should return records matching the endAt param', async function(assert) {
+  assert.expect(1);
 
-moduleFor('service:firebase-util', 'Unit | Service | firebase util | query', {
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const result = await service.query('comments/post_a', {
+    equalTo: 'comment_b',
+  });
+
+  // Assert
+  assert.deepEqual(result, [{
+    id: 'comment_b',
+    message: 'Comment B',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
+});
+
+test('should return records matching the limitToFirst param', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const result = await service.query('comments/post_a', {
+    limitToFirst: 1,
+  });
+
+  // Assert
+  assert.deepEqual(result, [{
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
+});
+
+test('should return records matching the limitToLast param', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const result = await service.query('comments/post_a', {
+    limitToLast: 1,
+  });
+
+  // Assert
+  assert.deepEqual(result, [{
+    id: 'comment_b',
+    message: 'Comment B',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
+});
+
+test('should return no records when nothing matches the query', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const result = await service.query('comments/unknown', {
+    equalTo: 'comment_a',
+  });
+
+  // Assert
+  assert.deepEqual(result, []);
+});
+
+test('should update query array in realtime when cacheId is provided', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const result = await service.query('comments/post_a', {
+    cacheId: 'cache_id',
+    limitToLast: 1,
+  });
+
+  await service.update({
+    'comments/post_a/comment_c': {
+      message: 'Comment C',
+      timestamp: 12345,
+      author: 'user_b',
+    },
+  });
+
+  // Assert
+  assert.deepEqual(result, [{
+    id: 'comment_c',
+    message: 'Comment C',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
+});
+
+test('should update query record in realtime when cacheId is provided', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const result = await service.query('comments/post_a', {
+    cacheId: 'cache_id',
+    limitToLast: 1,
+  });
+
+  await service.update({ 'comments/post_a/comment_a/message': 'Foo' });
+
+  // Assert
+  assert.deepEqual(result, [{
+    id: 'comment_c',
+    message: 'Foo',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
+});
+
+test('should return cached records when available', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  await service.query('comments/post_a', {
+    cacheId: 'cache_id',
+    equalTo: 'comment_a',
+  });
+
+  // `cache_id` listener should already exists. Thus, even if we provide a
+  // path that doesn't exist, the cached record should be returned.
+  const result = await service.query('unknown', { cacheId: 'cache_id' });
+
+  // Assert
+  assert.deepEqual(result, [{
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
+});
+
+test('should load next limitToFirst records when requesting it', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const result = await service.query('comments/post_a', {
+    cacheId: 'cache_id',
+    limitToFirst: 1,
+  });
+
+  await result.next('cache_id', 1);
+
+  // Assert
+  assert.deepEqual(result, [{
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
+  }, {
+    id: 'comment_b',
+    message: 'Comment B',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
+});
+
+test('should load next limitToLast records when requesting it', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  const result = await service.query('comments/post_a', {
+    cacheId: 'cache_id',
+    limitToLast: 1,
+  });
+
+  await result.next('cache_id', 1);
+
+  // Assert
+  assert.deepEqual(result, [{
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
+  }, {
+    id: 'comment_b',
+    message: 'Comment B',
+    timestamp: 12345,
+    author: 'user_b',
+  }]);
+});
+
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | query (old usage)', {
   needs: [ 'service:firebase', 'service:firebase-app' ],
 
   beforeEach() {
@@ -896,3 +1004,187 @@ test('should return false when record does not exist', async function(assert) {
   // Assert
   assert.equal(result, false);
 });
+
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | findRecord', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(oldFixtureData);
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should return record', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const EXPECTED = { id: 'foo', photoURL: 'foo.jpg', username: 'bar' };
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  service.findRecord('id', 'users/foo').then((actual) => {
+    // Assert
+    assert.deepEqual(actual, EXPECTED);
+  });
+});
+
+test('should return an empty object when finding a record that does not exist', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const EXPECTED = {};
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  service.findRecord('id', 'users/unknown').then((actual) => {
+    // Assert
+    assert.deepEqual(actual, EXPECTED);
+  });
+});
+
+test('should pick up changes on find record', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const EXPECTED = { id: 'foo', photoURL: 'foobar.jpg', username: 'bar' };
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  let actual;
+
+  service.findRecord('id', 'users/foo').then((record) => {
+    actual = record;
+
+    service.update({ 'users/foo/photoURL': 'foobar.jpg' });
+  });
+
+  // Assert
+  return wait().then(() => assert.deepEqual(actual, EXPECTED));
+});
+
+// TODO: Find a good way to test this
+// test('should reject when finding record fails', function(assert) {
+//   assert.expect(1);
+
+//   // Arrange
+//   let ref = new Object(this.ref);
+
+//   ref.child = sinon.stub().returns({
+//     on: sinon.stub().returns(stubPromise(false))
+//   });
+
+//   let service = this.subject({firebase: ref});
+
+//   // Act
+//   service.findRecord('id', 'users/foo').catch(() => {
+//     // Assert
+//     assert.ok(true);
+//   });
+// });
+
+test('should return cached records on find record when available', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const EXPECTED = { id: 'foo', photoURL: 'foo.jpg', username: 'bar' };
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  service.findRecord('id', 'users/foo').then(() => {
+    // `id` listener should already exists. Thus, even if we provide a
+    // path that doesn't exist, the cached record should be returned.
+    service.findRecord('id', 'foo').then((actual) => {
+      // Assert
+      assert.deepEqual(actual, EXPECTED);
+    });
+  });
+});
+
+test('should keep track of find record changes', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const service = this.subject({ firebase: this.ref });
+  const spy = sinon.spy(service, 'set');
+
+  // Act
+  service.findRecord('id', 'users/foo');
+
+  // Assert
+  assert.ok(spy.calledWith('_queryCache.id'));
+});
+
+moduleFor('service:firebase-util', 'Unit | Service | firebase util | findAll', {
+  needs: [ 'service:firebase', 'service:firebase-app' ],
+
+  beforeEach() {
+    stubFirebase();
+    this.ref = createOfflineRef(oldFixtureData);
+  },
+
+  afterEach() {
+    unStubFirebase();
+    destroyFirebaseApps();
+  },
+});
+
+test('should find all records', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const EXPECTED = [{
+    id: 'foo',
+    photoURL: 'foo.jpg',
+    username: 'bar',
+  }, {
+    id: 'hello',
+    photoURL: 'hello.jpg',
+    username: 'world',
+  }];
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  service.findAll('users').then((actual) => {
+    // Assert
+    assert.deepEqual(actual, EXPECTED);
+  });
+});
+
+test('should return an empty array when finding all records that does not exist', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const EXPECTED = [];
+  const service = this.subject({ firebase: this.ref });
+
+  // Act
+  service.findAll('id', 'unknown').then((actual) => {
+    // Assert
+    assert.deepEqual(actual, EXPECTED);
+  });
+});
+
+// TODO: Find a good way to test this
+// test('should reject when finding all records fails', function(assert) {
+//   assert.expect(1);
+
+//   // Arrange
+//   const ref = new Object(this.ref);
+
+//   ref.child = sinon.stub().returns({
+//     once: sinon.stub().returns(stubPromise(false))
+//   });
+
+//   const service = this.subject({firebase: ref});
+
+//   // Act
+//   service.findAll('id', null).catch(() => {
+//     // Assert
+//     assert.ok(true);
+//   });
+// });
