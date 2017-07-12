@@ -74,8 +74,6 @@ export default Service.extend({
   },
 
   /**
-   * Uploads a file to Firebase storage
-   *
    * @param {string} path Storage path
    * @param {Blob} file File to upload
    * @param {Object} [metadata={}] File metadata
@@ -100,8 +98,6 @@ export default Service.extend({
   },
 
   /**
-   * Delete a file from Firebase storage
-   *
    * @param {string} url File HTTPS URL
    * @return {Promise} Resolves when deleted.
    */
@@ -113,8 +109,6 @@ export default Service.extend({
   },
 
   /**
-   * Generate a Firebase push ID for a path
-   *
    * @param {string} path Firebase path
    * @return {string} Push ID
    */
@@ -123,8 +117,6 @@ export default Service.extend({
   },
 
   /**
-   * Writes to firebase natively in fan-out style
-   *
    * @param {Object} fanoutObject Fan-out object to write
    * @return {Promise} Resolves when update succeeds
    */
@@ -207,18 +199,18 @@ export default Service.extend({
   },
 
   /**
-   * Load more records to id in _queryCache
+   * Load more query records based on the cacheId
    *
-   * @param {string} listenerId Listener ID
+   * @param {string} cacheId Listener ID
    * @param {number} numberOfRecords Number of records to add
    * @return {Promise} Resolves when the next set of data has been loaded
    */
-  next(listenerId, numberOfRecords) {
+  next(cacheId, numberOfRecords) {
     console.warn('DEPRECATION: firebase-util next() will be removed in favor ' +
         'of firebase-flex adapter\'s own implementation');
 
     return new RSVP.Promise((resolve, reject) => {
-      let query = this.get('_queryCache')[listenerId];
+      let query = this.get('_queryCache')[cacheId];
 
       query.ref.off();
       query.ref = this.get('firebase').child(query.path);
@@ -268,8 +260,6 @@ export default Service.extend({
   },
 
   /**
-   * Checks if record exists in Firebase
-   *
    * @param {string} path Firebase path
    * @return {Promise.<boolean>} Resolves to true if record exists.
    *    Otherwise false.
