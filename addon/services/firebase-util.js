@@ -162,11 +162,11 @@ export default Service.extend({
                 if (trackedQueries.hasOwnProperty(cacheId)) {
                   this._updateTrackedQueryRecord(cacheId, record);
                 } else {
-                  resolve(this._trackQueryRecord(cacheId, options, record));
+                  this._trackQueryRecord(cacheId, options, record);
                 }
-              } else {
-                resolve(record);
               }
+
+              resolve(record);
             });
           } else {
             reject();
@@ -400,7 +400,6 @@ export default Service.extend({
    * @param {string} cacheId
    * @param {Object} options
    * @param {Object} record
-   * @return {Object} Tracked query record
    * @private
    */
   _trackQueryRecord(cacheId, options, record) {
@@ -408,8 +407,6 @@ export default Service.extend({
     const query = assign({}, options, { record: record });
 
     trackedQueries[cacheId] = query;
-
-    return trackedQueries[cacheId]['record'];
   },
 
   /**
