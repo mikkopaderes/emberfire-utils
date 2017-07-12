@@ -26,24 +26,31 @@ export default Service.extend({
   /**
    * @type Ember.Service
    * @readOnly
+   * @default
+   * @protected
    */
   firebase: service(),
 
   /**
    * @type Ember.Service
    * @readOnly
+   * @default
+   * @protected
    */
   firebaseApp: service(),
 
   /**
    * @type Ember.Service
    * @readOnly
+   * @default
+   * @protected
    */
   store: service(),
 
   /**
    * @type Object
    * @default
+   * @protected
    */
   trackedQueries: {},
 
@@ -55,9 +62,7 @@ export default Service.extend({
   _queryCache: null,
 
   /**
-   * Service hook.
-   *
-   * - Set _queryCache to an empty object
+   * Service hook
    */
   init() {
     this._super(...arguments);
@@ -150,19 +155,19 @@ export default Service.extend({
       } else {
         let ref = this.get('firebase').child(path);
 
-        ref = this._setupQuerySortingAndFiltering(ref, options, true);
+        ref = this.setupQuerySortingAndFiltering(ref, options, true);
 
         const onSuccess = bind(this, (snapshot) => {
           if (snapshot.exists()) {
             // Will always loop once because of the forced limitTo* 1
             snapshot.forEach((child) => {
-              const record = this._serialize(child.key, child.val());
+              const record = this.serialize(child.key, child.val());
 
               if (cacheId) {
                 if (trackedQueries.hasOwnProperty(cacheId)) {
-                  this._updateTrackedQueryRecord(cacheId, record);
+                  this.updateTrackedQueryRecord(cacheId, record);
                 } else {
-                  this._trackQueryRecord(cacheId, options, record);
+                  this.trackQueryRecord(cacheId, options, record);
                 }
               }
 
@@ -308,7 +313,7 @@ export default Service.extend({
           if (snapshot.exists()) {
             this._assignObject(
                 query.record,
-                this._serialize(snapshot.key, snapshot.val()));
+                this.serialize(snapshot.key, snapshot.val()));
             resolve(query.record);
           } else {
             this._nullifyObject(query.record);
@@ -346,7 +351,7 @@ export default Service.extend({
 
         if (snapshot.exists()) {
           snapshot.forEach((child) => {
-            records.push(this._serialize(child.key, child.val()));
+            records.push(this.serialize(child.key, child.val()));
           });
         }
 
@@ -381,9 +386,9 @@ export default Service.extend({
    * @param {string} key Record key
    * @param {(string|Object)} value Record value
    * @return {Object} Serialized record
-   * @private
+   * @protected
    */
-  _serialize(key, value) {
+  serialize(key, value) {
     let record;
 
     if (typeOf(value) === 'object') {
@@ -400,9 +405,9 @@ export default Service.extend({
    * @param {string} cacheId
    * @param {Object} options
    * @param {Object} record
-   * @private
+   * @protected
    */
-  _trackQueryRecord(cacheId, options, record) {
+  trackQueryRecord(cacheId, options, record) {
     const trackedQueries = this.get('trackedQueries');
     const query = assign({}, options, { record: record });
 
@@ -414,9 +419,9 @@ export default Service.extend({
    * @param {Object} options
    * @param {Array} records
    * @param {firebase.database.DataSnapshot} ref
-   * @private
+   * @protected
    */
-  _trackQueryRecords(cacheId, options, records, ref) {
+  trackQueryRecords(cacheId, options, records, ref) {
     const trackedQueries = this.get('trackedQueries');
     const query = assign({}, options, { records: records, ref: ref });
 
@@ -426,9 +431,9 @@ export default Service.extend({
   /**
    * @param {string} cacheId
    * @param {Object} record
-   * @private
+   * @protected
    */
-  _updateTrackedQueryRecord(cacheId, record) {
+  updateTrackedQueryRecord(cacheId, record) {
     const trackedQueries = this.get('trackedQueries');
     const query = trackedQueries[cacheId];
 
@@ -440,9 +445,9 @@ export default Service.extend({
    * @param {Object} query
    * @param {boolean} isForcingLimitToOne
    * @return {firebase.database.DataSnapshot} Reference with sort/filters
-   * @private
+   * @protected
    */
-  _setupQuerySortingAndFiltering(ref, query, isForcingLimitToOne) {
+  setupQuerySortingAndFiltering(ref, query, isForcingLimitToOne) {
     if (!query.hasOwnProperty('orderBy')) {
       query.orderBy = 'id';
     }
@@ -481,6 +486,54 @@ export default Service.extend({
     });
 
     return ref;
+  },
+
+  /**
+   * @param {firebase.database.DataSnapshot} ref
+   * @param {string} cacheId
+   * @protected
+   */
+  setupQueryListListener(ref, cacheId) {
+    const fastboot = this.get('fastboot');
+
+    if (!fastboot || !fastboot.get('isFastBoot')) {
+      const trackedQueries = this.get('trackedQueries');
+      const query = trackedQueries[cacheId];
+      const onChildAdded = bind(this, (snapshot) => {
+        const record = this.serialize(snapshot.key, snapshot.val());
+
+        if (!query.records.findBy('id', snapshot.key)) {
+          if (query.hasOwnProperty('limitToLast')) {
+            query.records.unshiftObject(record);
+          } else {
+            query.records.addObject(record);
+          }
+        }
+      });
+
+      ref.on('child_added', onChildAdded);
+
+      const onChildChanged = bind(this, (snapshot) => {
+        const oldRecord = query.records.findBy('id', snapshot.key);
+        const newRecord = this.serialize(snapshot.key, snapshot.val());
+
+        if (oldRecord) {
+          assign(oldRecord, newRecord);
+        }
+      });
+
+      ref.on('child_changed', onChildChanged);
+
+      const onChildRemoved = bind(this, (snapshot) => {
+        const record = query.records.findBy('id', snapshot.key);
+
+        if (record) {
+          query.records.removeObject(record);
+        }
+      });
+
+      ref.on('child_removed', onChildRemoved);
+    }
   },
 
   /**
@@ -556,6 +609,29 @@ export default Service.extend({
   },
 
   /**
+   * Set the query sorting and filtering
+   *
+   * @param {Object} query Query object
+   * @private
+   */
+  _setQuerySortingAndFiltering(query) {
+    if (query.orderBy === 'id') {
+      query.ref = query.ref.orderByKey();
+    } else if (query.orderBy === '.value') {
+      query.ref = query.ref.orderByValue();
+    } else {
+      query.ref = query.ref.orderByChild(query.orderBy);
+    }
+
+    [ 'startAt', 'endAt', 'equalTo', 'limitToFirst', 'limitToLast' ].forEach(
+        (type) => {
+          if (query.hasOwnProperty(type)) {
+            query.ref = query.ref[type](query[type]);
+          }
+        });
+  },
+
+  /**
    * @param {string} path
    * @param {Object} options
    * @return {Promise} Resolves to records that matches the query
@@ -571,21 +647,21 @@ export default Service.extend({
       } else {
         let ref = this.get('firebase').child(path);
 
-        ref = this._setupQuerySortingAndFiltering(ref, options);
+        ref = this.setupQuerySortingAndFiltering(ref, options);
 
         const onSuccess = bind(this, (snapshot) => {
           if (snapshot.exists()) {
             const records = new A();
 
             snapshot.forEach((child) => {
-              const record = this._serialize(child.key, child.val());
+              const record = this.serialize(child.key, child.val());
 
               records.pushObject(record);
             });
 
             if (cacheId) {
-              this._trackQueryRecords(cacheId, options, records, ref);
-              this._setupQueryListListener(ref, cacheId);
+              this.trackQueryRecords(cacheId, options, records, ref);
+              this.setupQueryListListener(ref, cacheId);
               ref.off('value', onSuccess);
             }
 
@@ -662,53 +738,5 @@ export default Service.extend({
         run(null, resolve, query.records);
       }
     });
-  },
-
-  /**
-   * @param {firebase.database.DataSnapshot} ref
-   * @param {string} cacheId
-   * @private
-   */
-  _setupQueryListListener(ref, cacheId) {
-    const fastboot = this.get('fastboot');
-
-    if (!fastboot || !fastboot.get('isFastBoot')) {
-      const trackedQueries = this.get('trackedQueries');
-      const query = trackedQueries[cacheId];
-      const onChildAdded = bind(this, (snapshot) => {
-        const record = this._serialize(snapshot.key, snapshot.val());
-
-        if (!query.records.findBy('id', snapshot.key)) {
-          if (query.hasOwnProperty('limitToLast')) {
-            query.records.unshiftObject(record);
-          } else {
-            query.records.addObject(record);
-          }
-        }
-      });
-
-      ref.on('child_added', onChildAdded);
-
-      const onChildChanged = bind(this, (snapshot) => {
-        const oldRecord = query.records.findBy('id', snapshot.key);
-        const newRecord = this._serialize(snapshot.key, snapshot.val());
-
-        if (oldRecord) {
-          assign(oldRecord, newRecord);
-        }
-      });
-
-      ref.on('child_changed', onChildChanged);
-
-      const onChildRemoved = bind(this, (snapshot) => {
-        const record = query.records.findBy('id', snapshot.key);
-
-        if (record) {
-          query.records.removeObject(record);
-        }
-      });
-
-      ref.on('child_removed', onChildRemoved);
-    }
   },
 });
