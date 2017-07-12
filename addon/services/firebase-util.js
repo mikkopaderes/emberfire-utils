@@ -62,7 +62,10 @@ export default Service.extend({
   init() {
     this._super(...arguments);
 
-    this.set('_queryCache', {});
+    this.setProperties({
+      'trackedQueries': {},
+      '_queryCache': {},
+    });
   },
 
   /**
@@ -411,6 +414,20 @@ export default Service.extend({
 
   /**
    * @param {string} cacheId
+   * @param {Object} options
+   * @param {Array} records
+   * @param {firebase.database.DataSnapshot} ref
+   * @private
+   */
+  _trackQueryRecords(cacheId, options, records, ref) {
+    const trackedQueries = this.get('trackedQueries');
+    const query = assign({}, options, { records: records, ref: ref });
+
+    trackedQueries[cacheId] = query;
+  },
+
+  /**
+   * @param {string} cacheId
    * @param {Object} record
    * @private
    */
@@ -557,18 +574,27 @@ export default Service.extend({
       } else {
         let ref = this.get('firebase').child(path);
 
-        ref = this._setupQuerySortingAndFiltering(ref, options, true);
+        ref = this._setupQuerySortingAndFiltering(ref, options);
 
         const onSuccess = bind(this, (snapshot) => {
           if (snapshot.exists()) {
+            const records = new A();
+
             snapshot.forEach((child) => {
-              // TODO
+              const record = this._serialize(child.key, child.val());
+
+              records.pushObject(record);
             });
 
-            // TODO: Remove this
-            resolve([]);
+            if (cacheId) {
+              this._trackQueryRecords(cacheId, options, records, ref);
+              this._setupQueryListListener(ref, cacheId);
+              ref.off('value', onSuccess);
+            }
+
+            resolve(records);
           } else {
-            reject();
+            resolve([]);
           }
         });
 
@@ -576,7 +602,11 @@ export default Service.extend({
           reject(error);
         });
 
-        ref.on('value', onSuccess, onError);
+        if (cacheId) {
+          ref.on('value', onSuccess, onError);
+        } else {
+          ref.once('value').then(onSuccess, onError);
+        }
       }
     }));
   },
@@ -651,24 +681,33 @@ export default Service.extend({
       const onChildAdded = bind(this, (snapshot) => {
         const record = this._serialize(snapshot.key, snapshot.val());
 
-        if (query.hasOwnProperty('limitToLast')) {
-          if (!query.record.findBy('id', snapshot.key)) {
-            query.record.unshiftObject(record);
+        if (!query.records.findBy('id', snapshot.key)) {
+          if (query.hasOwnProperty('limitToLast')) {
+            query.records.unshiftObject(record);
+          } else {
+            query.records.addObject(record);
           }
-        } else {
-          query.record.addObject(record);
         }
       });
 
       ref.on('child_added', onChildAdded);
 
-      // TODO: Add child_changed
+      const onChildChanged = bind(this, (snapshot) => {
+        const oldRecord = query.records.findBy('id', snapshot.key);
+        const newRecord = this._serialize(snapshot.key, snapshot.val());
+
+        if (oldRecord) {
+          assign(oldRecord, newRecord);
+        }
+      });
+
+      ref.on('child_changed', onChildChanged);
 
       const onChildRemoved = bind(this, (snapshot) => {
-        const record = query.record.findBy('id', snapshot.key);
+        const record = query.records.findBy('id', snapshot.key);
 
         if (record) {
-          query.record.removeObject(record);
+          query.records.removeObject(record);
         }
       });
 

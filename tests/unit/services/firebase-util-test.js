@@ -611,14 +611,14 @@ test('should update query record in realtime when cacheId is provided', async fu
   // Act
   const result = await service.query('comments/post_a', {
     cacheId: 'cache_id',
-    limitToLast: 1,
+    limitToFirst: 1,
   });
 
   await service.update({ 'comments/post_a/comment_a/message': 'Foo' });
 
   // Assert
   assert.deepEqual(result, [{
-    id: 'comment_c',
+    id: 'comment_a',
     message: 'Foo',
     timestamp: 12345,
     author: 'user_b',
@@ -662,7 +662,7 @@ test('should load next limitToFirst records when requesting it', async function(
     limitToFirst: 1,
   });
 
-  await result.next('cache_id', 1);
+  await service.next('cache_id', 1);
 
   // Assert
   assert.deepEqual(result, [{
@@ -690,7 +690,7 @@ test('should load next limitToLast records when requesting it', async function(a
     limitToLast: 1,
   });
 
-  await result.next('cache_id', 1);
+  await service.next('cache_id', 1);
 
   // Assert
   assert.deepEqual(result, [{
