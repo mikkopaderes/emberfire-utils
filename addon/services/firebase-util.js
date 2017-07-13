@@ -287,6 +287,9 @@ export default Service.extend({
    * @return {Promise.<Array>} Resolves to all records
    */
   findAll(path) {
+    console.warn('DEPRECATION: firebase-util findAll() will be removed in ' +
+        'favor of firebase-util query()');
+
     return new RSVP.Promise((resolve, reject) => {
       let ref = this.get('firebase').child(path);
 
