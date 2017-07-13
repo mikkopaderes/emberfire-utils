@@ -159,7 +159,8 @@ export default Service.extend({
                 if (trackedQueries.hasOwnProperty(cacheId)) {
                   this.updateTrackedQueryRecord(cacheId, record);
                 } else {
-                  this.trackQueryRecord(cacheId, options, record);
+                  assign(options, { record: record });
+                  this.trackQuery(cacheId, options);
                 }
               }
 
@@ -351,22 +352,9 @@ export default Service.extend({
   /**
    * @param {string} cacheId
    * @param {Object} options
-   * @param {Object} record
    * @protected
    */
-  trackQueryRecord(cacheId, options, record) {
-    const trackedQueries = this.get('trackedQueries');
-    const query = assign({}, options, { record: record });
-
-    trackedQueries[cacheId] = query;
-  },
-
-  /**
-   * @param {string} cacheId
-   * @param {Object} options
-   * @protected
-   */
-  trackQueryRecords(cacheId, options) {
+  trackQuery(cacheId, options) {
     const trackedQueries = this.get('trackedQueries');
     const query = assign({}, options);
 
@@ -605,7 +593,7 @@ export default Service.extend({
 
             if (cacheId) {
               assign(options, { path: path, records: records, ref: ref });
-              this.trackQueryRecords(cacheId, options);
+              this.trackQuery(cacheId, options);
               this.setupQueryListListener(options);
               ref.off('value', onSuccess);
             }
