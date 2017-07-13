@@ -202,61 +202,15 @@ export default Service.extend({
    * Load more query records based on the cacheId
    *
    * @param {string} cacheId Listener ID
-   * @param {number} numberOfRecords Number of records to add
-   * @return {Promise} Resolves when the next set of data has been loaded
+   * @param {number} numOfRecords Number of records to add
+   * @return {Promise} Resolving to records
    */
-  next(cacheId, numberOfRecords) {
-    console.warn('DEPRECATION: firebase-util next() will be removed in favor ' +
-        'of firebase-flex adapter\'s own implementation');
-
-    return new RSVP.Promise((resolve, reject) => {
-      let query = this.get('_queryCache')[cacheId];
-
-      query.ref.off();
-      query.ref = this.get('firebase').child(query.path);
-
-      if (query.hasOwnProperty('limitToFirst')) {
-        query.limitToFirst += numberOfRecords;
-      }
-
-      if (query.hasOwnProperty('limitToLast')) {
-        query.limitToLast += numberOfRecords;
-        query.willUnshiftRecord = true;
-      }
-
-      this._setQuerySortingAndFiltering(query);
-
-      // Set an active listener to cache the data for child_added.
-      // The child_added listener will turn this off later.
-      query.ref.on('value', () => {});
-      query.ref.once('value').then(bind(this, (snapshot) => {
-        if (snapshot.exists()) {
-          let requests = [];
-
-          Object.keys(snapshot.val()).forEach((key) => {
-            if (!query.records.findBy('id', key)) {
-              requests.push(this.get('store').findRecord(query.modelName, key));
-            }
-          });
-
-          RSVP.all(requests).then(bind(this, (records) => {
-            records.forEach((record) => {
-              if (query.willUnshiftRecord) {
-                query.records.unshiftObject(record);
-              } else {
-                query.records.pushObject(record);
-              }
-            });
-
-            this._setQueryListeners(query);
-            resolve(query.records);
-          }));
-        } else {
-          this._setQueryListeners(query);
-          resolve(query.records);
-        }
-      })).catch(bind(this, (error) => reject(error)));
-    });
+  next(cacheId, numOfRecords) {
+    if (this.get('trackedQueries')[cacheId]) {
+      return this._newNext(cacheId, numOfRecords);
+    } else {
+      return this._oldNext(cacheId, numOfRecords);
+    }
   },
 
   /**
@@ -407,13 +361,11 @@ export default Service.extend({
   /**
    * @param {string} cacheId
    * @param {Object} options
-   * @param {Array} records
-   * @param {firebase.database.DataSnapshot} ref
    * @protected
    */
-  trackQueryRecords(cacheId, options, records, ref) {
+  trackQueryRecords(cacheId, options) {
     const trackedQueries = this.get('trackedQueries');
-    const query = assign({}, options, { records: records, ref: ref });
+    const query = assign({}, options);
 
     trackedQueries[cacheId] = query;
   },
@@ -479,17 +431,16 @@ export default Service.extend({
   },
 
   /**
-   * @param {firebase.database.DataSnapshot} ref
-   * @param {string} cacheId
+   * @param {Object} query
    * @protected
    */
-  setupQueryListListener(ref, cacheId) {
+  setupQueryListListener(query) {
     const fastboot = this.get('fastboot');
 
     if (!fastboot || !fastboot.get('isFastBoot')) {
-      const trackedQueries = this.get('trackedQueries');
-      const query = trackedQueries[cacheId];
-      const onChildAdded = bind(this, (snapshot) => {
+      const ref = query.ref;
+
+      query.onChildAdded = bind(this, (snapshot) => {
         const record = this.serialize(snapshot.key, snapshot.val());
 
         if (!query.records.findBy('id', snapshot.key)) {
@@ -501,9 +452,9 @@ export default Service.extend({
         }
       });
 
-      ref.on('child_added', onChildAdded);
+      ref.on('child_added', query.onChildAdded);
 
-      const onChildChanged = bind(this, (snapshot) => {
+      query.onChildChanged = bind(this, (snapshot) => {
         const oldRecord = query.records.findBy('id', snapshot.key);
         const newRecord = this.serialize(snapshot.key, snapshot.val());
 
@@ -512,9 +463,9 @@ export default Service.extend({
         }
       });
 
-      ref.on('child_changed', onChildChanged);
+      ref.on('child_changed', query.onChildChanged);
 
-      const onChildRemoved = bind(this, (snapshot) => {
+      query.onChildRemoved = bind(this, (snapshot) => {
         const record = query.records.findBy('id', snapshot.key);
 
         if (record) {
@@ -522,7 +473,7 @@ export default Service.extend({
         }
       });
 
-      ref.on('child_removed', onChildRemoved);
+      ref.on('child_removed', query.onChildRemoved);
     }
   },
 
@@ -650,8 +601,9 @@ export default Service.extend({
             });
 
             if (cacheId) {
-              this.trackQueryRecords(cacheId, options, records, ref);
-              this.setupQueryListListener(ref, cacheId);
+              assign(options, { path: path, records: records, ref: ref });
+              this.trackQueryRecords(cacheId, options);
+              this.setupQueryListListener(options);
               ref.off('value', onSuccess);
             }
 
@@ -727,6 +679,117 @@ export default Service.extend({
       } else {
         run(null, resolve, query.records);
       }
+    });
+  },
+
+  /**
+   * @param {string} cacheId
+   * @param {number} numOfRecords
+   * @return {Promise} Resolving to records
+   */
+  _newNext(cacheId, numOfRecords) {
+    return new RSVP.Promise((resolve, reject) => {
+      const trackedQueries = this.get('trackedQueries');
+      const query = trackedQueries[cacheId];
+
+      query.ref.off('child_added', query.onChildAdded);
+      query.ref.off('child_changed', query.onChildChanged);
+      query.ref.off('child_removed', query.onChildRemoved);
+      query.ref = this.get('firebase').child(query.path);
+
+      if (query.hasOwnProperty('limitToFirst')) {
+        query.limitToFirst += numOfRecords;
+      }
+
+      if (query.hasOwnProperty('limitToLast')) {
+        query.limitToLast += numOfRecords;
+      }
+
+      query.ref = this.setupQuerySortingAndFiltering(query.ref, query);
+
+      const onSuccess = bind(this, (snapshot) => {
+        if (snapshot.exists()) {
+          const records = new A();
+
+          snapshot.forEach((child) => {
+            const record = this.serialize(child.key, child.val());
+
+            records.pushObject(record);
+          });
+
+          query.records.clear();
+          query.records.pushObjects(records);
+          this.setupQueryListListener(query);
+          query.ref.off('value', onSuccess);
+        }
+
+        resolve(query.records);
+      });
+
+      const onError = bind(this, (error) => {
+        reject(error);
+      });
+
+      query.ref.on('value', onSuccess, onError);
+    });
+  },
+
+  /**
+   * @param {string} cacheId
+   * @param {number} numOfRecords
+   * @return {Promise} Resolving to records
+   */
+  _oldNext(cacheId, numOfRecords) {
+    console.warn('DEPRECATION: You\'re loading the next records to an old ' +
+        'query usage. Please use the new query usage.');
+
+    return new RSVP.Promise((resolve, reject) => {
+      let query = this.get('_queryCache')[cacheId];
+
+      query.ref.off();
+      query.ref = this.get('firebase').child(query.path);
+
+      if (query.hasOwnProperty('limitToFirst')) {
+        query.limitToFirst += numOfRecords;
+      }
+
+      if (query.hasOwnProperty('limitToLast')) {
+        query.limitToLast += numOfRecords;
+        query.willUnshiftRecord = true;
+      }
+
+      this._setQuerySortingAndFiltering(query);
+
+      // Set an active listener to cache the data for child_added.
+      // The child_added listener will turn this off later.
+      query.ref.on('value', () => {});
+      query.ref.once('value').then(bind(this, (snapshot) => {
+        if (snapshot.exists()) {
+          let requests = [];
+
+          Object.keys(snapshot.val()).forEach((key) => {
+            if (!query.records.findBy('id', key)) {
+              requests.push(this.get('store').findRecord(query.modelName, key));
+            }
+          });
+
+          RSVP.all(requests).then(bind(this, (records) => {
+            records.forEach((record) => {
+              if (query.willUnshiftRecord) {
+                query.records.unshiftObject(record);
+              } else {
+                query.records.pushObject(record);
+              }
+            });
+
+            this._setQueryListeners(query);
+            resolve(query.records);
+          }));
+        } else {
+          this._setQueryListeners(query);
+          resolve(query.records);
+        }
+      })).catch(bind(this, (error) => reject(error)));
     });
   },
 });
