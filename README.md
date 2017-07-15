@@ -222,7 +222,7 @@ e.g.
 const store = this.get('store');
 
 store.findRecord('comment', 'another_comment').then((comment) => {
-  this.get('store').findRecord('post', 'post_a').then((post) => {
+  store.findRecord('post', 'post_a').then((post) => {
     post.get('comments').addObject(comment);
     post.save({
       adapterOptions: {
