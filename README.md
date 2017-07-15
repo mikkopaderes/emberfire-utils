@@ -221,13 +221,13 @@ e.g.
 ```javascript
 const store = this.get('store');
 
-store.findRecord('post', 'another_user').then((user) => {
+store.findRecord('comment', 'another_comment').then((comment) => {
   this.get('store').findRecord('post', 'post_a').then((post) => {
-    post.set('author', user);
+    post.get('comments').addObject(comment);
     post.save({
       adapterOptions: {
         include: {
-          'posts/post_a/author': 'another_user'
+          'posts/post_a/comments/another_comment': '<some_value_here>'
         }
       }
     });
