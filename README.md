@@ -412,7 +412,7 @@ record = {
 };
 ```
 
-For `findAll()`:
+For `query()`:
 
 ```javascript
 records = [{
