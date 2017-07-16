@@ -2924,9 +2924,9 @@ fast-sourcemap-concat@^1.0.1:
     source-map "^0.4.2"
     source-map-url "^0.3.0"
 
-fastboot-transform@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/fastboot-transform/-/fastboot-transform-0.1.0.tgz#c00c3c4f376b4e788278cec5cb8d35488e083c07"
+fastboot-transform@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/fastboot-transform/-/fastboot-transform-0.1.2.tgz#f910d666ab93e75604492ea655270d1804bc8de7"
   dependencies:
     broccoli-stew "^1.5.0"
 

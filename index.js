@@ -33,7 +33,7 @@ module.exports = {
   options: {
     nodeAssets: {
       firebaseui: function() {
-        var imports = [ 'firebaseui.js', 'firebaseui.css' ];
+        let imports = [ 'firebaseui.js', 'firebaseui.css' ];
 
         if (isFeatureExcluded('firebase-ui')) {
           imports = [];
@@ -41,17 +41,19 @@ module.exports = {
 
         return {
           srcDir: 'dist',
-          import: imports,
-          processTree(input) {
-            return fastbootTransform(input);
-          }
+          import: {
+            include: imports,
+            processTree(input) {
+              return fastbootTransform(input);
+            },
+          },
         };
       },
     },
   },
 
   included: function(app) {
-    var addonConfig = this.app.options[this.name];
+    let addonConfig = this.app.options[this.name];
 
     if (addonConfig) {
       featuresToExclude = addonConfig.exclude || [];
@@ -66,13 +68,13 @@ module.exports = {
   },
 
   treeForApp: function() {
-    var tree = this._super.treeForApp.apply(this, arguments);
+    let tree = this._super.treeForApp.apply(this, arguments);
 
     return new Funnel(tree, { exclude: assetsToExclude });
   },
 
   treeForAddon: function() {
-    var tree = this._super.treeForAddon.apply(this, arguments);
+    let tree = this._super.treeForAddon.apply(this, arguments);
 
     return new Funnel(tree, { exclude: assetsToExclude });
   },
