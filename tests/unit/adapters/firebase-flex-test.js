@@ -50,7 +50,7 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | createRecor
       normalize() {},
       push() {},
     };
-    this.type = { modelName: 'post' };
+    this.type = { modelName: 'blog-post' };
   },
 
   afterEach() {
@@ -64,8 +64,8 @@ test('should update Firebase', async function(assert) {
 
   // Arrange
   const serializedSnapshot = {
-    '/posts/post_c/message': 'Message',
-    '/posts/post_c/timestamp': 12345,
+    '/blogPosts/post_c/message': 'Message',
+    '/blogPosts/post_c/timestamp': 12345,
   };
   const spy = sinon.spy(this.ref, 'update');
   const adapter = this.subject({
@@ -88,8 +88,8 @@ test('should update Firebase', async function(assert) {
 
   // Assert
   assert.ok(spy.calledWith({
-    '/posts/post_c/message': 'Message',
-    '/posts/post_c/timestamp': 12345,
+    '/blogPosts/post_c/message': 'Message',
+    '/blogPosts/post_c/timestamp': 12345,
     '/userFeeds/user_a/post_c': true,
     '/userFeeds/user_b/post_c': true,
   }));
@@ -100,8 +100,8 @@ test('should push realtime changes to store', async function(assert) {
 
   // Arrange
   const serializedSnapshot = {
-    '/posts/post_c/message': 'Message',
-    '/posts/post_c/timestamp': 12345,
+    '/blogPosts/post_c/message': 'Message',
+    '/blogPosts/post_c/timestamp': 12345,
   };
   const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
@@ -125,8 +125,8 @@ test('should track Firebase listeners without path when not in FastBoot', async 
 
   // Arrange
   const serializedSnapshot = {
-    '/posts/post_c/message': 'Message',
-    '/posts/post_c/timestamp': 12345,
+    '/blogPosts/post_c/message': 'Message',
+    '/blogPosts/post_c/timestamp': 12345,
   };
   const adapter = this.subject({
     firebase: this.ref,
@@ -142,7 +142,7 @@ test('should track Firebase listeners without path when not in FastBoot', async 
   const result = adapter.get('trackedListeners');
 
   // Assert
-  assert.deepEqual(result, { 'posts/post_c': { value: true } });
+  assert.deepEqual(result, { 'blogPosts/post_c': { value: true } });
 });
 
 test('should track Firebase listeners with path when not in FastBoot', async function(assert) {
@@ -176,8 +176,8 @@ test('should not track Firebase listeners when in FastBoot', async function(asse
 
   // Arrange
   const serializedSnapshot = {
-    '/posts/post_c/message': 'Message',
-    '/posts/post_c/timestamp': 12345,
+    '/blogPosts/post_c/message': 'Message',
+    '/blogPosts/post_c/timestamp': 12345,
   };
   const adapter = this.subject({
     firebase: this.ref,
@@ -202,13 +202,13 @@ test('should not duplicate pushing realtime changes to store', async function(as
 
   // Arrange
   const serializedSnapshot = {
-    '/posts/post_c/message': 'Message',
-    '/posts/post_c/timestamp': 12345,
+    '/blogPosts/post_c/message': 'Message',
+    '/blogPosts/post_c/timestamp': 12345,
   };
   const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
     firebase: this.ref,
-    trackedListeners: { 'posts/post_c': { value: true } },
+    trackedListeners: { 'blogPosts/post_c': { value: true } },
     serialize: sinon.stub().returns(serializedSnapshot),
   });
 
@@ -229,8 +229,8 @@ test('should unload record when it gets deleted from the backend', async functio
   // Arrange
   const record = EmberObject.create({ isSaving: false });
   const serializedSnapshot = {
-    '/posts/post_c/message': 'Message',
-    '/posts/post_c/timestamp': 12345,
+    '/blogPosts/post_c/message': 'Message',
+    '/blogPosts/post_c/timestamp': 12345,
   };
   const stub = sinon.stub();
 
@@ -252,7 +252,7 @@ test('should unload record when it gets deleted from the backend', async functio
     message: 'Message',
     timestamp: 12345,
   });
-  await this.ref.child('/posts/post_c').remove();
+  await this.ref.child('/blogPosts/post_c').remove();
 
   // Assert
   assert.ok(stub.calledWithExactly(record));
@@ -279,8 +279,8 @@ test('should update Firebase when updating a record', async function(assert) {
 
   // Arrange
   const serializedSnapshot = {
-    '/posts/post_a/message': 'Message',
-    '/posts/post_a/timestamp': 12345,
+    '/blogPosts/post_a/message': 'Message',
+    '/blogPosts/post_a/timestamp': 12345,
   };
   const spy = sinon.spy(this.ref, 'update');
   const adapter = this.subject({
@@ -303,8 +303,8 @@ test('should update Firebase when updating a record', async function(assert) {
 
   // Assert
   assert.ok(spy.calledWith({
-    '/posts/post_a/message': 'Message',
-    '/posts/post_a/timestamp': 12345,
+    '/blogPosts/post_a/message': 'Message',
+    '/blogPosts/post_a/timestamp': 12345,
     '/userFeeds/user_a/post_a': true,
     '/userFeeds/user_b/post_a': true,
   }));
@@ -320,7 +320,7 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | findRecord'
       normalize() {},
       push() {},
     };
-    this.type = { modelName: 'post' };
+    this.type = { modelName: 'blog-post' };
   },
 
   afterEach() {
@@ -395,7 +395,7 @@ test('should track Firebase listeners without path when not in FastBoot', async 
   const result = adapter.get('trackedListeners');
 
   // Arrange
-  assert.deepEqual(result, { 'posts/post_a': { value: true } });
+  assert.deepEqual(result, { 'blogPosts/post_a': { value: true } });
 });
 
 test('should track Firebase listeners with path when not in FastBoot', async function(assert) {
@@ -440,7 +440,7 @@ test('should not duplicate pushing realtime changes to store', async function(as
   const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
     firebase: this.ref,
-    trackedListeners: { 'posts/post_a': { value: true } },
+    trackedListeners: { 'blogPosts/post_a': { value: true } },
   });
 
   // Act
@@ -470,7 +470,7 @@ test('should unload record when it gets deleted from the backend', async functio
 
   // Act
   await adapter.findRecord(this.store, this.type, 'post_a');
-  await this.ref.child('/posts/post_a').remove();
+  await this.ref.child('/blogPosts/post_a').remove();
 
   // Arrange
   assert.ok(stub.calledWithExactly(record));
@@ -486,8 +486,8 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | findAll', {
       normalize() {},
       push() {},
     };
-    this.type = { modelName: 'post' };
-    this.posts = [{
+    this.type = { modelName: 'blog-post' };
+    this.blogPosts = [{
       id: 'post_a',
       _internalModel: { id: 'post_a' },
     }, {
@@ -501,11 +501,11 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | findAll', {
     const findRecordStub = sinon.stub();
 
     findRecordStub.withArgs(this.store, this.type, 'post_a').returns(
-        stubPromise(true, this.posts[0]));
+        stubPromise(true, this.blogPosts[0]));
     findRecordStub.withArgs(this.store, this.type, 'post_b').returns(
-        stubPromise(true, this.posts[1]));
+        stubPromise(true, this.blogPosts[1]));
     findRecordStub.withArgs(this.store, this.type, 'post_c').returns(
-        stubPromise(true, this.posts[2]));
+        stubPromise(true, this.blogPosts[2]));
 
     this.findRecord = findRecordStub;
   },
@@ -529,7 +529,7 @@ test('should return all records for a model', async function(assert) {
   const result = await adapter.findAll(this.store, this.type);
 
   // Arrange
-  assert.deepEqual(result, [ this.posts[0], this.posts[1] ]);
+  assert.deepEqual(result, [ this.blogPosts[0], this.blogPosts[1] ]);
 });
 
 test('should error when finding all records for a model but nothing exists', async function(assert) {
@@ -564,9 +564,9 @@ test('should track Firebase listeners when finding all records for a model and n
 
   // Arrange
   assert.deepEqual(result, {
-    'posts': { child_added: true },
-    'posts/post_a': { value: true },
-    'posts/post_b': { value: true },
+    'blogPosts': { child_added: true },
+    'blogPosts/post_a': { value: true },
+    'blogPosts/post_b': { value: true },
   });
 });
 
@@ -600,7 +600,7 @@ test('should push realtime child_added changes to store after finding all record
 
   // Act
   await adapter.findAll(this.store, this.type);
-  await this.ref.child('/posts/post_c').update({
+  await this.ref.child('/blogPosts/post_c').update({
     message: 'Post C',
     timestamp: 12345,
     author: 'user_a',
@@ -634,7 +634,7 @@ test('should remove record from Firebase when deleting a record', async function
   });
 
   // Act
-  await adapter.deleteRecord({}, { modelName: 'post' }, {
+  await adapter.deleteRecord({}, { modelName: 'blog-post' }, {
     id: 'post_a',
     message: 'Post A',
     timestamp: 12345,
@@ -648,7 +648,7 @@ test('should remove record from Firebase when deleting a record', async function
 
   // Assert
   assert.ok(spy.calledWith({
-    '/posts/post_a': null,
+    '/blogPosts/post_a': null,
     '/users/user_a': null,
   }));
 });
@@ -660,7 +660,7 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | queryRecord
     stubFirebase();
     this.ref = createOfflineRef(getFixtureData());
     this.store = {};
-    this.type = { modelName: 'post' };
+    this.type = { modelName: 'blog-post' };
     this.post = { id: 'post_a' };
     this.findRecord = sinon.stub().returns(stubPromise(true, this.post));
   },
@@ -814,8 +814,8 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | query', {
       query: {},
       update() {},
     });
-    this.type = { modelName: 'post' };
-    this.posts = [{
+    this.type = { modelName: 'blog-post' };
+    this.blogPosts = [{
       id: 'post_a',
       _internalModel: { id: 'post_a' },
     }, {
@@ -828,12 +828,12 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | query', {
 
     const storeFindRecordStub = sinon.stub();
 
-    storeFindRecordStub.withArgs('post', 'post_a').returns(stubPromise(
-        true, this.posts[0]));
-    storeFindRecordStub.withArgs('post', 'post_b').returns(stubPromise(
-        true, this.posts[1]));
-    storeFindRecordStub.withArgs('post', 'post_c').returns(stubPromise(
-        true, this.posts[2]));
+    storeFindRecordStub.withArgs('blog-post', 'post_a').returns(stubPromise(
+        true, this.blogPosts[0]));
+    storeFindRecordStub.withArgs('blog-post', 'post_b').returns(stubPromise(
+        true, this.blogPosts[1]));
+    storeFindRecordStub.withArgs('blog-post', 'post_c').returns(stubPromise(
+        true, this.blogPosts[2]));
 
     this.store = {
       findRecord: storeFindRecordStub,
@@ -842,11 +842,11 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | query', {
     const adapterFindRecordStub = sinon.stub();
 
     adapterFindRecordStub.withArgs(this.store, this.type, 'post_a').returns(
-        stubPromise(true, this.posts[0]));
+        stubPromise(true, this.blogPosts[0]));
     adapterFindRecordStub.withArgs(this.store, this.type, 'post_b').returns(
-        stubPromise(true, this.posts[1]));
+        stubPromise(true, this.blogPosts[1]));
     adapterFindRecordStub.withArgs(this.store, this.type, 'post_c').returns(
-        stubPromise(true, this.posts[2]));
+        stubPromise(true, this.blogPosts[2]));
 
     this.adapterFindRecord = adapterFindRecordStub;
   },
@@ -872,7 +872,7 @@ test('should return records that matches the equalTo query params', async functi
   }, this.recordArray);
 
   // Assert
-  assert.deepEqual(result, [ this.posts[0] ]);
+  assert.deepEqual(result, [ this.blogPosts[0] ]);
 });
 
 test('should return records that matches the startAt query params', async function(assert) {
@@ -890,7 +890,7 @@ test('should return records that matches the startAt query params', async functi
   }, this.recordArray);
 
   // Assert
-  assert.deepEqual(result, [ this.posts[0], this.posts[1] ]);
+  assert.deepEqual(result, [ this.blogPosts[0], this.blogPosts[1] ]);
 });
 
 test('should return records that matches the endAt query params', async function(assert) {
@@ -908,7 +908,7 @@ test('should return records that matches the endAt query params', async function
   }, this.recordArray);
 
   // Assert
-  assert.deepEqual(result, [ this.posts[0] ]);
+  assert.deepEqual(result, [ this.blogPosts[0] ]);
 });
 
 test('should return records that matches the limitToFirst query params', async function(assert) {
@@ -926,7 +926,7 @@ test('should return records that matches the limitToFirst query params', async f
   }, this.recordArray);
 
   // Assert
-  assert.deepEqual(result, [ this.posts[0] ]);
+  assert.deepEqual(result, [ this.blogPosts[0] ]);
 });
 
 test('should return records that matches the limitToLast query params', async function(assert) {
@@ -944,7 +944,7 @@ test('should return records that matches the limitToLast query params', async fu
   }, this.recordArray);
 
   // Assert
-  assert.deepEqual(result, [ this.posts[1] ]);
+  assert.deepEqual(result, [ this.blogPosts[1] ]);
 });
 
 test('should return records that matches the path query params', async function(assert) {
@@ -962,7 +962,7 @@ test('should return records that matches the path query params', async function(
   }, this.recordArray);
 
   // Assert
-  assert.deepEqual(result, [ this.posts[0], this.posts[1] ]);
+  assert.deepEqual(result, [ this.blogPosts[0], this.blogPosts[1] ]);
 });
 
 test('should return no records when nothing matches the query params', async function(assert) {
@@ -997,7 +997,7 @@ test('should listen for child_added changes when query params has cacheId and no
     cacheId: 'foo',
   }, this.recordArray);
   await this.ref.update({
-    '/posts/post_c': {
+    '/blogPosts/post_c': {
       message: 'Post C',
       timestamp: 12345,
       author: 'user_a',
@@ -1006,9 +1006,9 @@ test('should listen for child_added changes when query params has cacheId and no
 
   // Assert
   assert.deepEqual(this.recordArray.get('content'), [
-    this.posts[0]._internalModel,
-    this.posts[1]._internalModel,
-    this.posts[2]._internalModel,
+    this.blogPosts[0]._internalModel,
+    this.blogPosts[1]._internalModel,
+    this.blogPosts[2]._internalModel,
   ]);
 });
 
@@ -1027,7 +1027,7 @@ test('should not listen for child_added changes when query params has cacheId an
     cacheId: 'foo',
   }, this.recordArray);
   await this.ref.update({
-    '/posts/post_c': {
+    '/blogPosts/post_c': {
       message: 'Post C',
       timestamp: 12345,
       author: 'user_a',
@@ -1051,11 +1051,11 @@ test('should listen for child_removed changes when query params has cacheId and 
   await adapter.query(this.store, this.type, {
     cacheId: 'foo',
   }, this.recordArray);
-  await this.ref.update({ '/posts/post_a': null });
+  await this.ref.update({ '/blogPosts/post_a': null });
 
   // Assert
   assert.deepEqual(this.recordArray.get('content'), [
-    this.posts[1]._internalModel,
+    this.blogPosts[1]._internalModel,
   ]);
 });
 
@@ -1073,7 +1073,7 @@ test('should not listen for child_removed changes when query params has cacheId 
   await adapter.query(this.store, this.type, {
     cacheId: 'foo',
   }, this.recordArray);
-  await this.ref.update({ '/posts/post_a': null });
+  await this.ref.update({ '/blogPosts/post_a': null });
 
   // Assert
   assert.deepEqual(this.recordArray.get('content'), []);

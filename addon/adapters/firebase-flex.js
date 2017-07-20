@@ -1,7 +1,8 @@
 /** @module emberfire-utils */
-import { pluralize } from 'ember-inflector';
 import { assign } from 'ember-platform';
 import { bind } from 'ember-runloop';
+import { camelize } from 'ember-string';
+import { pluralize } from 'ember-inflector';
 import Adapter from 'ember-data/adapter';
 import RSVP from 'rsvp';
 import computed from 'ember-computed';
@@ -159,9 +160,9 @@ export default Adapter.extend({
    */
   deleteRecord(store, type, snapshot) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
-      const modelName = type.modelName;
+      const modelName = this._getParsedModelName(type.modelName);
       const id = snapshot.id;
-      const path = `/${pluralize(modelName)}/${id}`;
+      const path = `/${modelName}/${id}`;
       const serializedInclude = this._serializeInclude(snapshot);
       let fanout = {};
 
@@ -307,7 +308,8 @@ export default Adapter.extend({
     const fastboot = this.get('fastboot');
 
     if (!fastboot || !fastboot.get('isFastBoot')) {
-      const key = path ? `${path}/${id}` : `${pluralize(modelName)}/${id}`;
+      const key = path ?
+          `${path}/${id}` : `${this._getParsedModelName(modelName)}/${id}`;
 
       if (!this._isListenerTracked(key, 'value')) {
         this._trackListener(key, 'value');
@@ -339,7 +341,7 @@ export default Adapter.extend({
     const fastboot = this.get('fastboot');
 
     if (!fastboot || !fastboot.get('isFastBoot')) {
-      const path = `${pluralize(modelName)}`;
+      const path = `${this._getParsedModelName(modelName)}`;
 
       if (!this._isListenerTracked(path, 'child_added')) {
         this._trackListener(path, 'child_added');
@@ -493,8 +495,16 @@ export default Adapter.extend({
     if (path) {
       return firebase.child(`${path}/${id}`);
     } else {
-      return firebase.child(`${pluralize(modelName)}/${id}`);
+      return firebase.child(`${this._getParsedModelName(modelName)}/${id}`);
     }
+  },
+
+  /**
+   * @param {string} modelName
+   * @return {string} Camelized and pluralized model name
+   */
+  _getParsedModelName(modelName) {
+    return camelize(pluralize(modelName));
   },
 
   /**

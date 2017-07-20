@@ -12,7 +12,7 @@ export default Controller.extend({
     const store = this.get('store');
     const user = await store.findRecord('user', 'user_a');
 
-    const newPost = store.createRecord('post', {
+    const newPost = store.createRecord('blog-post', {
       message: 'Foo',
       timestamp: firebase.database.ServerValue.TIMESTAMP,
       author: user,
@@ -23,7 +23,7 @@ export default Controller.extend({
     newPost.save({
       adapterOptions: {
         include: {
-          '/posts/$id/author': 'user_a',
+          '/blogPosts/$id/author': 'user_a',
         },
       },
     });
@@ -33,7 +33,7 @@ export default Controller.extend({
 
   async handleUpdateRecordClick() {
     const store = this.get('store');
-    const post = await store.findRecord('post', 'post_a');
+    const post = await store.findRecord('blog-post', 'post_a');
     const user = await store.findRecord('user', 'user_b');
 
     post.set('message', 'Foo');
@@ -41,7 +41,7 @@ export default Controller.extend({
     post.save({
       adapterOptions: {
         include: {
-          '/posts/post_a/author': user.get('id'),
+          '/blogPosts/post_a/author': user.get('id'),
         },
       },
     });
@@ -49,7 +49,7 @@ export default Controller.extend({
   },
 
   async handleFindRecordClick() {
-    await this.get('store').findRecord('post', 'post_a');
+    await this.get('store').findRecord('blog-post', 'post_a');
 
     this._updatePosts();
   },
@@ -58,7 +58,7 @@ export default Controller.extend({
     const store = this.get('store');
 
     await store.findAll('user');
-    await store.findAll('post');
+    await store.findAll('blog-post');
 
     this._updatePosts();
   },
@@ -72,7 +72,7 @@ export default Controller.extend({
   async handleQueryRecordWithPathClick() {
     const store = this.get('store');
 
-    await store.queryRecord('post', {
+    await store.queryRecord('blog-post', {
       path: 'userFeeds/user_a',
       isReference: true,
       equalTo: 'post_a',
@@ -84,7 +84,7 @@ export default Controller.extend({
   async handleQueryRecordWithoutPathClick() {
     const store = this.get('store');
 
-    await store.queryRecord('post', {
+    await store.queryRecord('blog-post', {
       equalTo: 'post_a',
     });
 
@@ -92,7 +92,7 @@ export default Controller.extend({
   },
 
   async handleQueryWithPathClick() {
-    const posts = await this.get('store').query('post', {
+    const posts = await this.get('store').query('blog-post', {
       cacheId: 'cache-id',
       path: 'userFeeds/user_a',
       isReference: true,
@@ -103,7 +103,7 @@ export default Controller.extend({
   },
 
   async handleQueryWithoutPathClick() {
-    const posts = await this.get('store').query('post', {
+    const posts = await this.get('store').query('blog-post', {
       cacheId: 'cache-id',
       limitToFirst: 1,
     });
@@ -117,6 +117,18 @@ export default Controller.extend({
 
   async handleResetRecordsClick() {
     const fanout = {
+      blogPosts: {
+        post_a: {
+          message: 'Post A',
+          timestamp: new Date().getTime(),
+          author: 'user_a',
+        },
+        post_b: {
+          message: 'Post B',
+          timestamp: new Date().getTime(),
+          author: 'user_a',
+        },
+      },
       comments: {
         comment_a: {
           message: 'Comment A',
@@ -127,24 +139,6 @@ export default Controller.extend({
           message: 'Comment B',
           timestamp: new Date().getTime(),
           author: 'user_b',
-        },
-      },
-      postComments: {
-        post_a: {
-          comment_a: true,
-          comment_b: true,
-        },
-      },
-      posts: {
-        post_a: {
-          message: 'Post A',
-          timestamp: new Date().getTime(),
-          author: 'user_a',
-        },
-        post_b: {
-          message: 'Post B',
-          timestamp: new Date().getTime(),
-          author: 'user_a',
         },
       },
       userFeeds: {
@@ -175,7 +169,7 @@ export default Controller.extend({
   },
 
   async _updatePosts() {
-    const posts = await this.get('store').peekAll('post');
+    const posts = await this.get('store').peekAll('blog-post');
 
     this.set('posts', posts);
   },

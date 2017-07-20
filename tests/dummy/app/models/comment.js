@@ -6,5 +6,5 @@ export default Model.extend({
   message: attr('string'),
   timestamp: attr('number'),
   author: belongsTo('user'),
-  post: belongsTo('post'),
+  post: belongsTo('blog-post'),
 });

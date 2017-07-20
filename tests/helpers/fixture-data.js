@@ -3,6 +3,18 @@
  */
 export default function getFixtureData() {
   return {
+    blogPosts: {
+      post_a: {
+        message: 'Post A',
+        timestamp: 12345,
+        author: 'user_a',
+      },
+      post_b: {
+        message: 'Post B',
+        timestamp: 12345,
+        author: 'user_a',
+      },
+    },
     comments: {
       post_a: {
         comment_a: {
@@ -15,18 +27,6 @@ export default function getFixtureData() {
           timestamp: 12345,
           author: 'user_b',
         },
-      },
-    },
-    posts: {
-      post_a: {
-        message: 'Post A',
-        timestamp: 12345,
-        author: 'user_a',
-      },
-      post_b: {
-        message: 'Post B',
-        timestamp: 12345,
-        author: 'user_a',
       },
     },
     userFeeds: {
