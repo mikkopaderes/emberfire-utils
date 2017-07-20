@@ -1,6 +1,7 @@
 /** @module emberfire-utils */
-import { pluralize } from 'ember-inflector';
 import { assign } from 'ember-platform';
+import { camelize } from 'ember-string';
+import { pluralize } from 'ember-inflector';
 import EmberFireSerializer from 'emberfire/serializers/firebase';
 
 /**
@@ -67,6 +68,6 @@ export default EmberFireSerializer.extend({
       }
     }
 
-    return `/${pluralize(snapshot.modelName)}/${snapshot.id}`;
+    return `/${camelize(pluralize(snapshot.modelName))}/${snapshot.id}`;
   },
 });

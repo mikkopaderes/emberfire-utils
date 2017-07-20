@@ -59,6 +59,18 @@ export default Controller.extend({
 
   async handleResetRecordsClick() {
     const fanout = {
+      blogPosts: {
+        post_a: {
+          message: 'Post A',
+          timestamp: new Date().getTime(),
+          author: 'user_a',
+        },
+        post_b: {
+          message: 'Post B',
+          timestamp: new Date().getTime(),
+          author: 'user_a',
+        },
+      },
       comments: {
         post_a: {
           comment_a: {
@@ -71,18 +83,6 @@ export default Controller.extend({
             timestamp: new Date().getTime(),
             author: 'user_b',
           },
-        },
-      },
-      posts: {
-        post_a: {
-          message: 'Post A',
-          timestamp: new Date().getTime(),
-          author: 'user_a',
-        },
-        post_b: {
-          message: 'Post B',
-          timestamp: new Date().getTime(),
-          author: 'user_a',
         },
       },
       userFeeds: {
