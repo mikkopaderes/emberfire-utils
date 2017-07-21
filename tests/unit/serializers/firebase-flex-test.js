@@ -23,3 +23,24 @@ test('should serialize record to Firebase fanout', function(assert) {
     '/blogPosts/post_a/timestamp': 12345,
   });
 });
+
+test('should remove _innerReferencePath from fanout', function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const post = this.subject({
+    id: 'post_a',
+    message: 'Post',
+    timestamp: 12345,
+    _innerReferencePath: '/post_a',
+  });
+
+  // Act
+  const serializedRecord = post.serialize();
+
+  // Assert
+  assert.deepEqual(serializedRecord, {
+    '/blogPosts/post_a/message': 'Post',
+    '/blogPosts/post_a/timestamp': 12345,
+  });
+});

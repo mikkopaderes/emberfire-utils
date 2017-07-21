@@ -346,6 +346,7 @@ test('should return fetched record', async function(assert) {
     message: 'Post A',
     timestamp: 12345,
     author: 'user_a',
+    _innerReferencePath: '/post_a',
   });
 });
 

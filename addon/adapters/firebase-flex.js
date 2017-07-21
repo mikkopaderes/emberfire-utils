@@ -479,7 +479,14 @@ export default Adapter.extend({
    * @private
    */
   _getGetSnapshotWithId(snapshot) {
-    return assign({}, { id: snapshot.key }, snapshot.val());
+    const ref = snapshot.ref;
+    const referencePath = ref.toString().substring(ref.root.toString().length);
+    const innerReferencePath = referencePath.substring(
+        referencePath.search('/'));
+
+    return assign({}, { id: snapshot.key }, snapshot.val(), {
+      _innerReferencePath: innerReferencePath,
+    });
   },
 
   /**
