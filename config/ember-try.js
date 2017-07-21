@@ -113,7 +113,7 @@ module.exports = {
       name: 'ember-data-canary',
       npm: {
         devDependencies: {
-          'ember-data': 'emberjs/data#canary'
+          'ember-data': 'emberjs/data#master'
         },
         resolutions: {
           'ember-data': 'canary'
