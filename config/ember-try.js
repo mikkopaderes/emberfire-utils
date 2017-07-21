@@ -90,8 +90,8 @@ module.exports = {
     {
       name: 'ember-data-release',
       npm: {
-        dependencies: {
-          'ember-data': 'components/ember-data#release'
+        devDependencies: {
+          'ember-data': 'emberjs/data#release'
         },
         resolutions: {
           'ember-data': 'release'
@@ -101,8 +101,8 @@ module.exports = {
     {
       name: 'ember-data-beta',
       npm: {
-        dependencies: {
-          'ember-data': 'components/ember-data#beta'
+        devDependencies: {
+          'ember-data': 'emberjs/data#beta'
         },
         resolutions: {
           'ember-data': 'beta'
@@ -112,8 +112,8 @@ module.exports = {
     {
       name: 'ember-data-canary',
       npm: {
-        dependencies: {
-          'ember-data': 'components/ember-data#canary'
+        devDependencies: {
+          'ember-data': 'emberjs/data#canary'
         },
         resolutions: {
           'ember-data': 'canary'
