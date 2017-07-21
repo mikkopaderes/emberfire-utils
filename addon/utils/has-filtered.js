@@ -22,6 +22,8 @@ export default function hasFiltered(modelName, rawQuery = {}) {
 
       if (query.hasOwnProperty('path')) {
         query.path = query.path.replace('$id', this.get('id'));
+        query.path = query.path.replace(
+            '$innerReferencePath', this.get('_innerReferencePath'));
       }
 
       return PromiseArray.create({

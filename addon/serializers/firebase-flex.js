@@ -20,8 +20,10 @@ export default EmberFireSerializer.extend({
     const changedAttributes = assign({}, snapshot.changedAttributes());
 
     snapshot.eachAttribute((key, attribute) => {
-      if (changedAttributes.hasOwnProperty(key)) {
-        fanout[`${path}/${key}`] = snapshot.attr(key);
+      if (key !== '_innerReferencePath') {
+        if (changedAttributes.hasOwnProperty(key)) {
+          fanout[`${path}/${key}`] = snapshot.attr(key);
+        }
       }
     });
 

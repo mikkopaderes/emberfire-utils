@@ -248,25 +248,40 @@ Most of the time, we don't want to use the `hasMany()` relationship in our model
 To solve those 2 problems above, use `hasFiltered()` relationship. It has the same parameters as `store.query()` and it also works with infinite scrolling as explained above.
 
 ```javascript
-// app/models/user
+// app/models/post
 import Model from 'ember-data/model';
 import attr from 'ember-data/attr';
 
 import hasFiltered from 'emberfire-utils/utils/has-filtered';
 
 export default Model.extend({
-  photoURL: attr('string'),
-  username: attr('string'),
-  posts: hasFiltered('post', {
-    path: 'userFeeds/$id',
-    cacheId: '$id_posts',
+  title: attr('string'),
+
+  _innerReferencePath: attr('string'),
+
+  comments: hasFiltered('comment', {
+    cacheId: '$id_comments',
+    path: '/comments/$innerReferencePath',
     limitToFirst: 10,
   })
 });
 
 ```
 
-Notice the `$id`. It's a keyword that will be replaced by the model's ID.
+Notice the following:
+
+* `$id`
+  * This is a keyword that will be replaced by the model's ID.
+  * This works for both `cacheId` and `path`.
+* `_innerReferencePath`
+  * This will be replaced by the inner Firebase reference path of the model.
+  * If `post` model lives in `/posts/forum_a/post_a`, the value would be `/forum_a/post_a`.
+  * This is a client-side only property. It won't be persisted in the DB when you save the record.
+* `$innerReferencePath`
+  * This is a keyword that will be replaced by `_innerReferencePath`.
+  * This only works for `path`.
+  * Won't work when `_innerReferencePath` isn't defined.
+  * This is useful for when let's say your comments lives in `/comments/<forum_id>/<post_id>` and you know the value of the `<post_id>` through `$id` but don't know the value of `<forum_id>`.
 
 > `hasFiltered()` are read only.
 

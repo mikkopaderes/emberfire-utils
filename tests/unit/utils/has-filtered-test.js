@@ -10,10 +10,10 @@ import stubPromise from 'dummy/tests/helpers/stub-promise';
 module('Unit | Utility | has filtered');
 
 test('should return a computed promise array when calling hasFiltered', function(assert) {
-  assert.expect(1);
+  assert.expect(2);
 
   // Arrange
-  const EXPECTED = [{
+  const queryResult = [{
     id: 'xfoo',
     value: 'foo',
   }, {
@@ -23,19 +23,31 @@ test('should return a computed promise array when calling hasFiltered', function
     id: 'zbar',
     value: 'bar',
   }];
-  let EO = EmberObject.extend({
-    store: { query: sinon.stub().returns(stubPromise(true, EXPECTED)) },
-    foo: hasFiltered('model'),
+  const queryStub = sinon.stub().returns(stubPromise(true, queryResult));
+  const EO = EmberObject.extend({
+    store: { query: queryStub },
+
+    id: 'lala',
+    _innerReferencePath: 'land',
+
+    foo: hasFiltered('model', {
+      cacheId: 'foo_$id',
+      path: 'foo_$id_bar_$innerReferencePath',
+    }),
   });
-  let object = EO.create();
+  const object = EO.create();
 
   // Act
-  let promiseArray = object.get('foo');
+  const promiseArray = object.get('foo');
 
   // Assert
   return wait().then(() => {
-    let actual = promiseArray.get('content');
+    const result = promiseArray.get('content');
 
-    assert.equal(actual, EXPECTED);
+    assert.ok(queryStub.calledWithExactly('model', {
+      cacheId: 'foo_lala',
+      path: 'foo_lala_bar_land',
+    }));
+    assert.equal(result, queryResult);
   });
 });

@@ -6,4 +6,5 @@ export default Model.extend({
   message: attr('string'),
   timestamp: attr('number'),
   author: belongsTo('user'),
+  _innerReferencePath: attr('string'),
 });
