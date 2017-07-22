@@ -261,7 +261,7 @@ export default Model.extend({
 
   comments: hasFiltered('comment', {
     cacheId: '$id_comments',
-    path: '/comments/$innerReferencePath',
+    path: '/comments/$innerReferencePath/$id',
     limitToFirst: 10,
   })
 });
@@ -275,7 +275,8 @@ Notice the following:
   * This works for both `cacheId` and `path`.
 * `_innerReferencePath`
   * This will be replaced by the inner Firebase reference path of the model.
-  * If `post` model lives in `/posts/forum_a/post_a`, the value would be `/forum_a/post_a`.
+  * If `post` model lives in `/posts/forum_a/post_a`, the value would be `forum_a`.
+    * Another example, `/posts/foo/bar/post_a` -> `foo/bar`.
   * This is a client-side only property. It won't be persisted in the DB when you save the record.
 * `$innerReferencePath`
   * This is a keyword that will be replaced by `_innerReferencePath`.
