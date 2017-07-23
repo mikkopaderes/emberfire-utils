@@ -90,7 +90,7 @@ export default Service.extend({
       uploadTask.on('state_changed', bind(this, (snapshot) => {
         onStateChange(snapshot);
       }), bind(this, (error) => {
-        reject(error);
+        reject(new Error(error));
       }), bind(this, () => {
         resolve(uploadTask.snapshot.downloadURL);
       }));
@@ -104,7 +104,9 @@ export default Service.extend({
   deleteFile(url) {
     return new RSVP.Promise((resolve, reject) => {
       this.get('firebaseApp').storage().refFromURL(url).delete().then(
-          bind(this, resolve)).catch(bind(this, (error) => reject(error)));
+          bind(this, resolve)).catch(bind(this, (error) => {
+            reject(new Error(error));
+          }));
     });
   },
 
@@ -124,7 +126,7 @@ export default Service.extend({
     return new RSVP.Promise((resolve, reject) => {
       this.get('firebase').update(fanoutObject, bind(this, (error) => {
         if (error) {
-          reject(error);
+          reject(new Error(error));
         } else {
           resolve();
         }
@@ -167,12 +169,12 @@ export default Service.extend({
               resolve(record);
             });
           } else {
-            reject();
+            reject(new Error('Record doesn\'t exist'));
           }
         });
 
         const onError = bind(this, (error) => {
-          reject(error);
+          reject(new Error(error));
         });
 
         if (cacheId) {
@@ -224,7 +226,7 @@ export default Service.extend({
       this.get('firebase').child(path).once('value').then(
           bind(this, (snapshot) => {
             resolve(snapshot.exists());
-          })).catch(bind(this, (error) => reject(error)));
+          })).catch(bind(this, (error) => reject(new Error(error))));
     });
   },
 
@@ -266,7 +268,7 @@ export default Service.extend({
           }
         }), bind(this, (error) => {
           this._nullifyObject(query.record);
-          reject(error);
+          reject(new Error(error));
         }));
       }
     });
@@ -304,7 +306,7 @@ export default Service.extend({
         }
 
         resolve(records);
-      })).catch(bind(this, (error) => reject(error)));
+      })).catch(bind(this, (error) => reject(new Error(error))));
     });
   },
 
@@ -605,7 +607,7 @@ export default Service.extend({
         });
 
         const onError = bind(this, (error) => {
-          reject(error);
+          reject(new Error(error));
         });
 
         if (cacheId) {
@@ -666,7 +668,7 @@ export default Service.extend({
             this._setQueryListeners(query);
             resolve(query.records);
           }
-        })).catch(bind(this, (error) => reject(error)));
+        })).catch(bind(this, (error) => reject(new Error(error))));
       } else {
         run(null, resolve, query.records);
       }
@@ -718,7 +720,7 @@ export default Service.extend({
       });
 
       const onError = bind(this, (error) => {
-        reject(error);
+        reject(new Error(error));
       });
 
       query.ref.on('value', onSuccess, onError);
@@ -780,7 +782,7 @@ export default Service.extend({
           this._setQueryListeners(query);
           resolve(query.records);
         }
-      })).catch(bind(this, (error) => reject(error)));
+      })).catch(bind(this, (error) => reject(new Error(error))));
     });
   },
 });

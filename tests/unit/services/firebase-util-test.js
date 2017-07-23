@@ -1,5 +1,6 @@
 import { moduleFor, test } from 'ember-qunit';
 import { assign } from 'ember-platform';
+import run from 'ember-runloop';
 import wait from 'ember-test-helpers/wait';
 
 import createOfflineRef from 'dummy/tests/helpers/create-offline-ref';
@@ -162,10 +163,11 @@ test('should call state change callback when available', async function(assert) 
   assert.ok(spy.calledWith(snapshot));
 });
 
-test('should reject promise when uploading a blob is unsuccessful', async function(assert) {
+test('should reject promise when uploading a blob is unsuccessful', function(assert) {
   assert.expect(1);
 
   // Arrange
+  const done = assert.async();
   const service = this.subject({
     firebaseApp: {
       storage: sinon.stub().returns({
@@ -183,12 +185,12 @@ test('should reject promise when uploading a blob is unsuccessful', async functi
   });
 
   // Act
-  try {
-    await service.uploadFile('images/foo', new Blob());
-  } catch (e) {
-    // Assert
-    assert.ok(true);
-  }
+  run(() => {
+    service.uploadFile('images/foo', new Blob()).catch((e) => {
+      done();
+      assert.ok(true);
+    });
+  });
 });
 
 moduleFor('service:firebase-util', 'Unit | Service | firebase util | deleteFile', {
@@ -356,14 +358,16 @@ test('should error when record does not exist', async function(assert) {
   assert.expect(1);
 
   // Arrange
+  const done = assert.async();
   const service = this.subject({ firebase: this.ref });
 
   // Act
-  try {
-    await service.queryRecord('users/unknown');
-  } catch (e) {
-    assert.ok(true);
-  }
+  run(() => {
+    service.queryRecord('users/unknown').catch((e) => {
+      done();
+      assert.ok(true);
+    });
+  });
 });
 
 test('should update in realtime when cacheId is provided', async function(assert) {
