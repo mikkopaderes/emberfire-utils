@@ -81,7 +81,7 @@ export default Adapter.extend({
 
       this.get('firebase').update(fanout, bind(this, (error) => {
         if (error) {
-          reject(error);
+          reject(new Error(error));
         } else {
           resolve();
         }
@@ -107,14 +107,16 @@ export default Adapter.extend({
           ref.off('value', onValue);
           resolve(this._getGetSnapshotWithId(snapshot));
         } else {
-          reject();
+          reject(new Error('Record doesn\'t exist'));
         }
       });
 
 
       let ref = this._getFirebaseReference(modelName, id, path);
 
-      ref.on('value', onValue);
+      ref.on('value', onValue, bind(this, (error) => {
+        reject(new Error(error));
+      }));
     }));
   },
 
@@ -141,13 +143,13 @@ export default Adapter.extend({
             ref.off('value');
             resolve(records);
           })).catch(bind(this, (error) => {
-            reject(error);
+            reject(new Error(error));
           }));
         } else {
-          reject();
+          reject(new Error('Record doesn\'t exist'));
         }
       }), bind(this, (error) => {
-        reject(error);
+        reject(new Error(error));
       }));
     }));
   },
@@ -171,7 +173,7 @@ export default Adapter.extend({
 
       this.get('firebase').update(fanout, bind(this, (error) => {
         if (error) {
-          reject(error);
+          reject(new Error(error));
         } else {
           resolve();
         }
@@ -202,11 +204,11 @@ export default Adapter.extend({
               ref.off('value', onValue);
               resolve(record);
             }).catch((error) => {
-              reject(error);
+              reject(new Error(error));
             });
           });
         } else {
-          reject();
+          reject(new Error('Record doesn\'t exist'));
         }
       });
 
@@ -215,7 +217,7 @@ export default Adapter.extend({
       ref = this._setupQuerySortingAndFiltering(ref, query, true);
 
       ref.on('value', onValue, bind(this, (error) => {
-        reject(error);
+        reject(new Error(error));
       }));
     }));
   },
@@ -256,7 +258,7 @@ export default Adapter.extend({
           ref.off('value', onValue);
           resolve(records);
         })).catch(bind(this, (error) => {
-          reject(error);
+          reject(new Error(error));
         }));
       });
 
@@ -265,7 +267,7 @@ export default Adapter.extend({
       ref = this._setupQuerySortingAndFiltering(ref, query);
 
       ref.on('value', onValue, bind(this, (error) => {
-        reject(error);
+        reject(new Error(error));
       }));
     }));
   },

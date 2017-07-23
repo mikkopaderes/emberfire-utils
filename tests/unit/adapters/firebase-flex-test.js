@@ -1,6 +1,7 @@
 import { A } from 'ember-array/utils';
 import { moduleFor, test } from 'ember-qunit';
 import EmberObject from 'ember-object';
+import run from 'ember-runloop';
 
 import createOfflineRef from 'dummy/tests/helpers/create-offline-ref';
 import destroyFirebaseApps from 'dummy/tests/helpers/destroy-firebase-apps';
@@ -350,21 +351,22 @@ test('should return fetched record', async function(assert) {
   });
 });
 
-test('should error when record does not exist', async function(assert) {
+test('should error when record does not exist', function(assert) {
   assert.expect(1);
 
   // Arrange
+  const done = assert.async();
   const adapter = this.subject({
     firebase: this.ref,
   });
 
   // Act
-  try {
-    await adapter.findRecord(this.store, this.type, 'post_z');
-  } catch (e) {
-    // Assert
-    assert.ok(true);
-  }
+  run(() => {
+    adapter.findRecord(this.store, this.type, 'post_z').catch((e) => {
+      done();
+      assert.ok(true);
+    });
+  });
 });
 
 test('should push realtime changes to store', async function(assert) {
@@ -533,21 +535,22 @@ test('should return all records for a model', async function(assert) {
   assert.deepEqual(result, [ this.blogPosts[0], this.blogPosts[1] ]);
 });
 
-test('should error when finding all records for a model but nothing exists', async function(assert) {
+test('should error when finding all records for a model but nothing exists', function(assert) {
   assert.expect(1);
 
   // Arrange
+  const done = assert.async();
   const adapter = this.subject({
     firebase: this.ref,
   });
 
   // Act
-  try {
-    await adapter.findAll(this.store, { modelName: 'foo' });
-  } catch (e) {
-    // Assert
-    assert.ok(true);
-  }
+  run(() => {
+    adapter.findAll(this.store, { modelName: 'foo' }).catch((e) => {
+      done();
+      assert.ok(true);
+    });
+  });
 });
 
 test('should track Firebase listeners when finding all records for a model and not in FastBoot', async function(assert) {
@@ -780,24 +783,24 @@ test('should return a single record that matches the path query params', async f
   assert.deepEqual(result, this.post);
 });
 
-test('should error when no record matches the query params', async function(assert) {
+test('should error when no record matches the query params', function(assert) {
   assert.expect(1);
 
   // Arrange
+  const done = assert.async();
   const adapter = this.subject({
     firebase: this.ref,
     findRecord: this.findRecord,
   });
 
-  try {
-    // Act
-    await adapter.queryRecord(this.store, this.type, {
+  run(() => {
+    adapter.queryRecord(this.store, this.type, {
       equalTo: 'foo',
+    }).catch((e) => {
+      done();
+      assert.ok(true);
     });
-  } catch (error) {
-    // Assert
-    assert.ok(true);
-  }
+  });
 });
 
 moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | query', {
