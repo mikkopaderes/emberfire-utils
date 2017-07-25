@@ -59,12 +59,7 @@ export default Adapter.extend({
    * @return {Promise} Resolves when create record succeeds
    */
   createRecord(store, type, snapshot) {
-    return this.updateRecord(store, type, snapshot).then(() => {
-      const path = snapshot.adapterOptions && snapshot.adapterOptions.path ?
-          snapshot.adapterOptions.path : null;
-
-      this._setupValueListener(store, type.modelName, snapshot.id, path);
-    });
+    return this.updateRecord(store, type, snapshot);
   },
 
   /**
@@ -83,6 +78,11 @@ export default Adapter.extend({
         if (error) {
           reject(new Error(error));
         } else {
+          const path = snapshot.adapterOptions && snapshot.adapterOptions.path ?
+              snapshot.adapterOptions.path : null;
+
+          this._setupValueListener(store, type.modelName, snapshot.id, path);
+
           resolve();
         }
       }));

@@ -265,8 +265,8 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | updateRecor
   beforeEach() {
     stubFirebase();
     this.ref = createOfflineRef(getFixtureData());
-    this.store = {};
-    this.type = {};
+    this.store = { normalize() {}, push() {} };
+    this.type = { modelName: 'blog-post' };
   },
 
   afterEach() {
