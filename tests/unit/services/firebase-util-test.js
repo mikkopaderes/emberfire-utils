@@ -59,7 +59,7 @@ test('should return generated push ID', function(assert) {
   const service = this.subject({ firebase: this.ref });
 
   // Act
-  const result = service.generateIdForRecord('users');
+  const result = service.generateIdForRecord();
 
   // Assert
   assert.ok(result);
