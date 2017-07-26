@@ -111,11 +111,10 @@ export default Service.extend({
   },
 
   /**
-   * @param {string} path Firebase path
    * @return {string} Push ID
    */
-  generateIdForRecord(path) {
-    return this.get('firebase').child(path).push().key;
+  generateIdForRecord() {
+    return this.get('firebase').push().key;
   },
 
   /**
