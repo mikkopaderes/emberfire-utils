@@ -1,6 +1,6 @@
 /** @module emberfire-utils */
 import { assign } from 'ember-platform';
-import { bind } from 'ember-runloop';
+import { bind, next } from 'ember-runloop';
 import { camelize } from 'ember-string';
 import { pluralize } from 'ember-inflector';
 import Adapter from 'ember-data/adapter';
@@ -323,7 +323,9 @@ export default Adapter.extend({
             const snapshotWithId = this._getGetSnapshotWithId(snapshot);
             const normalizedRecord = store.normalize(modelName, snapshotWithId);
 
-            store.push(normalizedRecord);
+            next(() => {
+              store.push(normalizedRecord);
+            });
           } else {
             this._unloadRecord(store, modelName, id);
           }
@@ -347,9 +349,12 @@ export default Adapter.extend({
 
       if (!this._isListenerTracked(path, 'child_added')) {
         this._trackListener(path, 'child_added');
-        this._getFirebaseReference(modelName).on('child_added', (snapshot) => {
+
+        const ref = this._getFirebaseReference(modelName);
+
+        ref.on('child_added', bind(this, (snapshot) => {
           this._setupValueListener(store, modelName, snapshot.key);
-        });
+        }));
       }
     }
   },
