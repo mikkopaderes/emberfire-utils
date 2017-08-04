@@ -1,7 +1,7 @@
 import { A } from 'ember-array/utils';
 import { moduleFor, test } from 'ember-qunit';
 import EmberObject from 'ember-object';
-import run from 'ember-runloop';
+import run, { next } from 'ember-runloop';
 
 import createOfflineRef from 'dummy/tests/helpers/create-offline-ref';
 import destroyFirebaseApps from 'dummy/tests/helpers/destroy-firebase-apps';
@@ -116,9 +116,12 @@ test('should push realtime changes to store', async function(assert) {
     message: 'Message',
     timestamp: 12345,
   });
+  await this.ref.child('blogPosts/post_c').update({ 'message': 'Foo' });
 
   // Assert
-  assert.ok(spy.calledOnce);
+  next(() => {
+    assert.ok(spy.calledTwice);
+  });
 });
 
 test('should track Firebase listeners without path when not in FastBoot', async function(assert) {
@@ -380,9 +383,12 @@ test('should push realtime changes to store', async function(assert) {
 
   // Act
   await adapter.findRecord(this.store, this.type, 'post_a');
+  await this.ref.child('blogPosts/post_a').update({ 'message': 'Foo' });
 
   // Arrange
-  assert.ok(spy.calledOnce);
+  next(() => {
+    assert.ok(spy.calledTwice);
+  });
 });
 
 test('should track Firebase listeners without path when not in FastBoot', async function(assert) {
@@ -611,7 +617,9 @@ test('should push realtime child_added changes to store after finding all record
   });
 
   // Arrange
-  assert.ok(spy.calledThrice);
+  next(() => {
+    assert.ok(spy.calledThrice);
+  });
 });
 
 moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | deleteRecord', {
