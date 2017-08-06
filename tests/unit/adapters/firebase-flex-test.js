@@ -636,7 +636,7 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | deleteRecor
   },
 });
 
-test('should remove record from Firebase when deleting a record', async function(assert) {
+test('should remove record from Firebase when deleting a record without path', async function(assert) {
   assert.expect(1);
 
   // Arrange
@@ -651,18 +651,33 @@ test('should remove record from Firebase when deleting a record', async function
     message: 'Post A',
     timestamp: 12345,
     author: 'user_a',
-    adapterOptions: {
-      include: {
-        '/users/user_a': null,
-      },
-    },
+    adapterOptions: { include: { 'users/user_a': null } },
   });
 
   // Assert
-  assert.ok(spy.calledWith({
-    '/blogPosts/post_a': null,
-    '/users/user_a': null,
-  }));
+  assert.ok(spy.calledWith({ 'blogPosts/post_a': null, 'users/user_a': null }));
+});
+
+test('should remove record from Firebase when deleting a record with path', async function(assert) {
+  assert.expect(1);
+
+  // Arrange
+  const spy = sinon.spy(this.ref, 'update');
+  const adapter = this.subject({
+    firebase: this.ref,
+  });
+
+  // Act
+  await adapter.deleteRecord({}, { modelName: 'comment' }, {
+    id: 'comment_a',
+    message: 'Comment A',
+    timestamp: 12345,
+    author: 'user_b',
+    adapterOptions: { path: 'comments/post_a' },
+  });
+
+  // Assert
+  assert.ok(spy.calledWith({ 'comments/post_a/comment_a': null }));
 });
 
 moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | queryRecord', {

@@ -164,8 +164,10 @@ export default Adapter.extend({
     return new RSVP.Promise(bind(this, (resolve, reject) => {
       const modelName = this._getParsedModelName(type.modelName);
       const id = snapshot.id;
-      const path = `/${modelName}/${id}`;
+      const path = snapshot.adapterOptions && snapshot.adapterOptions.path ?
+          `${snapshot.adapterOptions.path}/${id}` : `${modelName}/${id}`;
       const serializedInclude = this._serializeInclude(snapshot);
+
       let fanout = {};
 
       fanout[path] = null;
