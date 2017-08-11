@@ -23,7 +23,7 @@ export default Controller.extend({
     newPost.save({
       adapterOptions: {
         include: {
-          '/blogPosts/$id/author': 'user_a',
+          '/blogPosts/:id/author': 'user_a',
         },
       },
     });

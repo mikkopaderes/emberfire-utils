@@ -290,7 +290,14 @@ export default Adapter.extend({
 
         for (let key in include) {
           if (Object.prototype.hasOwnProperty.call(include, key)) {
-            const newKey = key.replace('$id', snapshot.id);
+            let newKey = key.replace(':id', snapshot.id);
+
+            if (key.includes('$id')) {
+              console.warn('DEPRECATION: $id will be replaced by :id in ' +
+                  'the adapterOptions.include property');
+
+              newKey = newKey.replace('$id', snapshot.id);
+            }
 
             newInclude[newKey] = include[key];
           }

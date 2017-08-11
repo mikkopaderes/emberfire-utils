@@ -24,7 +24,7 @@ export default Controller.extend({
       adapterOptions: {
         path: '/comments/post_a',
         include: {
-          '/comments/post_a/$id/author': 'user_a',
+          '/comments/post_a/:id/author': 'user_a',
         },
       },
     });
