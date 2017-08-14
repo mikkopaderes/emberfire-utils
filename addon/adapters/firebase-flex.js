@@ -25,6 +25,12 @@ export default Adapter.extend({
   firebase: inject(),
 
   /**
+   * @type {string}
+   * @default
+   */
+  innerReferencePathName: '_innerReferencePath',
+
+  /**
    * @type {Object}
    * @default
    */
@@ -70,11 +76,11 @@ export default Adapter.extend({
    */
   updateRecord(store, type, snapshot) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
-      const serializedSnapshot = this.serialize(snapshot);
-      const serializedInclude = this._serializeInclude(snapshot);
-      const fanout = assign({}, serializedSnapshot, serializedInclude);
+      const serializedSnapshot = this.serialize(snapshot, {
+        innerReferencePathName: this.get('innerReferencePathName'),
+      });
 
-      this.get('firebase').update(fanout, bind(this, (error) => {
+      this.get('firebase').update(serializedSnapshot, bind(this, (error) => {
         if (error) {
           reject(new Error(error));
         } else {
@@ -110,7 +116,6 @@ export default Adapter.extend({
           reject(new Error('Record doesn\'t exist'));
         }
       });
-
 
       let ref = this._getFirebaseReference(modelName, id, path);
 
@@ -164,14 +169,20 @@ export default Adapter.extend({
     return new RSVP.Promise(bind(this, (resolve, reject) => {
       const modelName = this._getParsedModelName(type.modelName);
       const id = snapshot.id;
-      const path = snapshot.adapterOptions && snapshot.adapterOptions.path ?
-          `${snapshot.adapterOptions.path}/${id}` : `${modelName}/${id}`;
-      const serializedInclude = this._serializeInclude(snapshot);
+      const adapterOptions = snapshot.adapterOptions;
+      const fanout = {};
 
-      let fanout = {};
+      if (adapterOptions) {
+        if (adapterOptions.hasOwnProperty('include')) {
+          assign(fanout, adapterOptions.include);
+        }
 
-      fanout[path] = null;
-      fanout = assign({}, fanout, serializedInclude);
+        if (adapterOptions.hasOwnProperty('path')) {
+          fanout[`${adapterOptions.path}/${id}`] = null;
+        } else {
+          fanout[`${modelName}/${id}`] = null;
+        }
+      }
 
       this.get('firebase').update(fanout, bind(this, (error) => {
         if (error) {
@@ -272,40 +283,6 @@ export default Adapter.extend({
         reject(new Error(error));
       }));
     }));
-  },
-
-  /**
-   * @param {DS.Snapshot} snapshot
-   * @return {Object} Serialized include
-   * @private
-   */
-  _serializeInclude(snapshot) {
-    const newInclude = {};
-
-    if (snapshot.hasOwnProperty('adapterOptions')) {
-      const adapterOptions = snapshot.adapterOptions;
-
-      if (adapterOptions && adapterOptions.hasOwnProperty('include')) {
-        const include = adapterOptions.include;
-
-        for (let key in include) {
-          if (Object.prototype.hasOwnProperty.call(include, key)) {
-            let newKey = key.replace(':id', snapshot.id);
-
-            if (key.includes('$id')) {
-              console.warn('DEPRECATION: $id will be replaced by :id in ' +
-                  'the adapterOptions.include property');
-
-              newKey = newKey.replace('$id', snapshot.id);
-            }
-
-            newInclude[newKey] = include[key];
-          }
-        }
-      }
-    }
-
-    return newInclude;
   },
 
   /**
@@ -502,9 +479,12 @@ export default Adapter.extend({
     pathNodes.shift();
     pathNodes.pop();
 
-    return assign({}, { id: snapshot.key }, snapshot.val(), {
-      _innerReferencePath: pathNodes.join('/'),
-    });
+    const newSnapshot = snapshot.val();
+
+    newSnapshot.id = snapshot.key;
+    newSnapshot[this.get('innerReferencePathName')] = pathNodes.join('/');
+
+    return newSnapshot;
   },
 
   /**

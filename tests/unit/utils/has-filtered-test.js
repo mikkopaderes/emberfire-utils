@@ -13,6 +13,9 @@ test('should return a computed promise array when calling hasFiltered', function
   assert.expect(2);
 
   // Arrange
+  const adapterForStub = sinon.stub().returns(EmberObject.create({
+    innerReferencePathName: 'innerReferencePath',
+  }));
   const queryResult = [{
     id: 'xfoo',
     value: 'foo',
@@ -25,14 +28,14 @@ test('should return a computed promise array when calling hasFiltered', function
   }];
   const queryStub = sinon.stub().returns(stubPromise(true, queryResult));
   const EO = EmberObject.extend({
-    store: { query: queryStub },
+    store: { adapterFor: adapterForStub, query: queryStub },
 
     id: 'lala',
-    _innerReferencePath: 'land',
+    innerReferencePath: 'land',
 
     foo: hasFiltered('model', {
-      cacheId: 'foo_$id',
-      path: 'foo_$id_bar_$innerReferencePath',
+      cacheId: 'foo_:id',
+      path: 'foo_:id_bar_:innerReferencePath',
     }),
   });
   const object = EO.create();

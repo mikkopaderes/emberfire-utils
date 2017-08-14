@@ -22,9 +22,9 @@ export default Controller.extend({
 
     newComment.save({
       adapterOptions: {
-        path: '/comments/post_a',
+        path: 'comments/post_a',
         include: {
-          '/comments/post_a/:id/author': 'user_a',
+          'comments/post_a/:id/author': 'user_a',
         },
       },
     });
@@ -46,7 +46,7 @@ export default Controller.extend({
   async handleQueryWithPathClick() {
     const comments = await this.get('store').query('comment', {
       cacheId: 'cache-id',
-      path: '/comments/post_a',
+      path: 'comments/post_a',
       limitToFirst: 1,
     });
 

@@ -34,8 +34,21 @@ export default function hasFiltered(modelName, rawQuery = {}) {
         query.path = query.path.replace('$id', this.get('id'));
 
         query.path = query.path.replace(':id', this.get('id'));
+
+        const modelName = this.get('constructor.modelName');
+        const adapter = this.get('store').adapterFor(modelName);
+        const innerReferencePathName = adapter.get('innerReferencePathName');
+
+        if (query.path.includes('$innerReferencePath')) {
+          console.warn('DEPRECATION: hasFiltered() path will now use ' +
+              ':innerReferencePath instead of $innerReferencePath');
+
+          query.path = query.path.replace(
+              '$innerReferencePath', this.get(innerReferencePathName));
+        }
+
         query.path = query.path.replace(
-            '$innerReferencePath', this.get('_innerReferencePath'));
+            ':innerReferencePath', this.get(innerReferencePathName));
       }
 
       return PromiseArray.create({

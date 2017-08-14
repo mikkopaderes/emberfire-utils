@@ -309,7 +309,7 @@ test('should return a record that matches the equalTo params', async function(as
   assert.deepEqual(result, {
     id: 'comment_b',
     message: 'Comment B',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   });
 });
@@ -329,7 +329,7 @@ test('should return a record that matches the startAt params', async function(as
   assert.deepEqual(result, {
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   });
 });
@@ -349,7 +349,7 @@ test('should return a record that matches the endAt params', async function(asse
   assert.deepEqual(result, {
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   });
 });
@@ -388,7 +388,7 @@ test('should update in realtime when cacheId is provided', async function(assert
   assert.deepEqual(result, {
     id: 'comment_a',
     message: 'Foo',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   });
 });
@@ -413,7 +413,7 @@ test('should return cached record when available', async function(assert) {
   assert.deepEqual(result, {
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   });
 });
@@ -447,12 +447,12 @@ test('should return records ordered by key', async function(assert) {
   assert.deepEqual(result, [{
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }, {
     id: 'comment_b',
     message: 'Comment B',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
@@ -472,7 +472,7 @@ test('should return records matching the equalTo param', async function(assert) 
   assert.deepEqual(result, [{
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
@@ -492,12 +492,12 @@ test('should return records matching the startAt param', async function(assert) 
   assert.deepEqual(result, [{
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }, {
     id: 'comment_b',
     message: 'Comment B',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
@@ -517,7 +517,7 @@ test('should return records matching the endAt param', async function(assert) {
   assert.deepEqual(result, [{
     id: 'comment_b',
     message: 'Comment B',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
@@ -537,7 +537,7 @@ test('should return records matching the limitToFirst param', async function(ass
   assert.deepEqual(result, [{
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
@@ -557,7 +557,7 @@ test('should return records matching the limitToLast param', async function(asse
   assert.deepEqual(result, [{
     id: 'comment_b',
     message: 'Comment B',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
@@ -592,7 +592,7 @@ test('should update query array in realtime when cacheId is provided', async fun
   await service.update({
     'comments/post_a/comment_c': {
       message: 'Comment C',
-      timestamp: 12345,
+      timestamp: 1483228800000,
       author: 'user_b',
     },
   });
@@ -601,7 +601,7 @@ test('should update query array in realtime when cacheId is provided', async fun
   assert.deepEqual(result, [{
     id: 'comment_c',
     message: 'Comment C',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
@@ -624,7 +624,7 @@ test('should update query record in realtime when cacheId is provided', async fu
   assert.deepEqual(result, [{
     id: 'comment_a',
     message: 'Foo',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
@@ -649,7 +649,7 @@ test('should return cached records when available', async function(assert) {
   assert.deepEqual(result, [{
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
@@ -672,12 +672,12 @@ test('should load next limitToFirst records when requesting it', async function(
   assert.deepEqual(result, [{
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }, {
     id: 'comment_b',
     message: 'Comment B',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
@@ -700,12 +700,12 @@ test('should load next limitToLast records when requesting it', async function(a
   assert.deepEqual(result, [{
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }, {
     id: 'comment_b',
     message: 'Comment B',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
   }]);
 });
