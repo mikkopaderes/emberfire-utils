@@ -6,12 +6,12 @@ export default function getFixtureData() {
     blogPosts: {
       post_a: {
         message: 'Post A',
-        timestamp: 12345,
+        timestamp: 1483228800000,
         author: 'user_a',
       },
       post_b: {
         message: 'Post B',
-        timestamp: 12345,
+        timestamp: 1483228800000,
         author: 'user_a',
       },
     },
@@ -19,12 +19,12 @@ export default function getFixtureData() {
       post_a: {
         comment_a: {
           message: 'Comment A',
-          timestamp: 12345,
+          timestamp: 1483228800000,
           author: 'user_b',
         },
         comment_b: {
           message: 'Comment B',
-          timestamp: 12345,
+          timestamp: 1483228800000,
           author: 'user_b',
         },
       },

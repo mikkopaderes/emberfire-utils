@@ -5,6 +5,7 @@ import run, { next } from 'ember-runloop';
 
 import createOfflineRef from 'dummy/tests/helpers/create-offline-ref';
 import destroyFirebaseApps from 'dummy/tests/helpers/destroy-firebase-apps';
+import firebase from 'firebase';
 import sinon from 'sinon';
 import stubFirebase from 'dummy/tests/helpers/stub-firebase';
 import unStubFirebase from 'dummy/tests/helpers/unstub-firebase';
@@ -65,8 +66,10 @@ test('should update Firebase', async function(assert) {
 
   // Arrange
   const serializedSnapshot = {
-    '/blogPosts/post_c/message': 'Message',
-    '/blogPosts/post_c/timestamp': 12345,
+    'blogPosts/post_c/message': 'Message',
+    'blogPosts/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
+    'userFeeds/user_a/post_c': true,
+    'userFeeds/user_b/post_c': true,
   };
   const spy = sinon.spy(this.ref, 'update');
   const adapter = this.subject({
@@ -75,24 +78,24 @@ test('should update Firebase', async function(assert) {
   });
 
   // Act
-  await adapter.updateRecord(this.store, this.type, {
+  await adapter.createRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
-    timestamp: 12345,
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
     adapterOptions: {
       include: {
-        '/userFeeds/user_a/post_c': true,
-        '/userFeeds/user_b/post_c': true,
+        'userFeeds/user_a/post_c': true,
+        'userFeeds/user_b/post_c': true,
       },
     },
   });
 
   // Assert
   assert.ok(spy.calledWith({
-    '/blogPosts/post_c/message': 'Message',
-    '/blogPosts/post_c/timestamp': 12345,
-    '/userFeeds/user_a/post_c': true,
-    '/userFeeds/user_b/post_c': true,
+    'blogPosts/post_c/message': 'Message',
+    'blogPosts/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
+    'userFeeds/user_a/post_c': true,
+    'userFeeds/user_b/post_c': true,
   }));
 });
 
@@ -101,8 +104,8 @@ test('should push realtime changes to store', async function(assert) {
 
   // Arrange
   const serializedSnapshot = {
-    '/blogPosts/post_c/message': 'Message',
-    '/blogPosts/post_c/timestamp': 12345,
+    'blogPosts/post_c/message': 'Message',
+    'blogPosts/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
   };
   const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
@@ -114,7 +117,7 @@ test('should push realtime changes to store', async function(assert) {
   await adapter.createRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
-    timestamp: 12345,
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
   });
   await this.ref.child('blogPosts/post_c').update({ 'message': 'Foo' });
 
@@ -129,8 +132,8 @@ test('should track Firebase listeners without path when not in FastBoot', async 
 
   // Arrange
   const serializedSnapshot = {
-    '/blogPosts/post_c/message': 'Message',
-    '/blogPosts/post_c/timestamp': 12345,
+    'blogPosts/post_c/message': 'Message',
+    'blogPosts/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
   };
   const adapter = this.subject({
     firebase: this.ref,
@@ -141,7 +144,7 @@ test('should track Firebase listeners without path when not in FastBoot', async 
   await adapter.createRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
-    timestamp: 12345,
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
   });
   const result = adapter.get('trackedListeners');
 
@@ -154,8 +157,9 @@ test('should track Firebase listeners with path when not in FastBoot', async fun
 
   // Arrange
   const serializedSnapshot = {
-    '/comments/post_a/comment_c/message': 'Message',
-    '/comments/post_a/comment_c/timestamp': 12345,
+    'comments/post_a/comment_c/message': 'Message',
+    'comments/post_a/comment_c/timestamp':
+        firebase.database.ServerValue.TIMESTAMP,
   };
   const adapter = this.subject({
     firebase: this.ref,
@@ -166,7 +170,7 @@ test('should track Firebase listeners with path when not in FastBoot', async fun
   await adapter.createRecord(this.store, { modelName: 'comment' }, {
     id: 'comment_a',
     message: 'Message',
-    timestamp: 12345,
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
     adapterOptions: { path: 'comments/post_a' },
   });
   const result = adapter.get('trackedListeners');
@@ -180,8 +184,8 @@ test('should not track Firebase listeners when in FastBoot', async function(asse
 
   // Arrange
   const serializedSnapshot = {
-    '/blogPosts/post_c/message': 'Message',
-    '/blogPosts/post_c/timestamp': 12345,
+    'blogPosts/post_c/message': 'Message',
+    'blogPosts/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
   };
   const adapter = this.subject({
     firebase: this.ref,
@@ -193,7 +197,7 @@ test('should not track Firebase listeners when in FastBoot', async function(asse
   await adapter.createRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
-    timestamp: 12345,
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
   });
   const result = adapter.get('trackedListeners');
 
@@ -206,8 +210,8 @@ test('should not duplicate pushing realtime changes to store', async function(as
 
   // Arrange
   const serializedSnapshot = {
-    '/blogPosts/post_c/message': 'Message',
-    '/blogPosts/post_c/timestamp': 12345,
+    'blogPosts/post_c/message': 'Message',
+    'blogPosts/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
   };
   const spy = sinon.spy(this.store, 'push');
   const adapter = this.subject({
@@ -220,7 +224,7 @@ test('should not duplicate pushing realtime changes to store', async function(as
   await adapter.createRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
-    timestamp: 12345,
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
   });
 
   // Assert
@@ -233,8 +237,8 @@ test('should unload record when it gets deleted from the backend', async functio
   // Arrange
   const record = EmberObject.create({ isSaving: false });
   const serializedSnapshot = {
-    '/blogPosts/post_c/message': 'Message',
-    '/blogPosts/post_c/timestamp': 12345,
+    'blogPosts/post_c/message': 'Message',
+    'blogPosts/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
   };
   const stub = sinon.stub();
 
@@ -254,9 +258,9 @@ test('should unload record when it gets deleted from the backend', async functio
   await adapter.createRecord(this.store, this.type, {
     id: 'post_c',
     message: 'Message',
-    timestamp: 12345,
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
   });
-  await this.ref.child('/blogPosts/post_c').remove();
+  await this.ref.child('blogPosts/post_c').remove();
 
   // Assert
   assert.ok(stub.calledWithExactly(record));
@@ -283,8 +287,10 @@ test('should update Firebase when updating a record', async function(assert) {
 
   // Arrange
   const serializedSnapshot = {
-    '/blogPosts/post_a/message': 'Message',
-    '/blogPosts/post_a/timestamp': 12345,
+    'blogPosts/post_a/message': 'Message',
+    'blogPosts/post_a/timestamp': firebase.database.ServerValue.TIMESTAMP,
+    'userFeeds/user_a/post_a': true,
+    'userFeeds/user_b/post_a': true,
   };
   const spy = sinon.spy(this.ref, 'update');
   const adapter = this.subject({
@@ -296,21 +302,21 @@ test('should update Firebase when updating a record', async function(assert) {
   await adapter.updateRecord(this.store, this.type, {
     id: 'post_a',
     message: 'Message',
-    timestamp: 12345,
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
     adapterOptions: {
       include: {
-        '/userFeeds/user_a/post_a': true,
-        '/userFeeds/user_b/post_a': true,
+        'userFeeds/user_a/post_a': true,
+        'userFeeds/user_b/post_a': true,
       },
     },
   });
 
   // Assert
   assert.ok(spy.calledWith({
-    '/blogPosts/post_a/message': 'Message',
-    '/blogPosts/post_a/timestamp': 12345,
-    '/userFeeds/user_a/post_a': true,
-    '/userFeeds/user_b/post_a': true,
+    'blogPosts/post_a/message': 'Message',
+    'blogPosts/post_a/timestamp': firebase.database.ServerValue.TIMESTAMP,
+    'userFeeds/user_a/post_a': true,
+    'userFeeds/user_b/post_a': true,
   }));
 });
 
@@ -348,7 +354,7 @@ test('should return fetched record', async function(assert) {
   assert.deepEqual(result, {
     id: 'post_a',
     message: 'Post A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_a',
     _innerReferencePath: '',
   });
@@ -479,7 +485,7 @@ test('should unload record when it gets deleted from the backend', async functio
 
   // Act
   await adapter.findRecord(this.store, this.type, 'post_a');
-  await this.ref.child('/blogPosts/post_a').remove();
+  await this.ref.child('blogPosts/post_a').remove();
 
   // Arrange
   assert.ok(stub.calledWithExactly(record));
@@ -610,9 +616,9 @@ test('should push realtime child_added changes to store after finding all record
 
   // Act
   await adapter.findAll(this.store, this.type);
-  await this.ref.child('/blogPosts/post_c').update({
+  await this.ref.child('blogPosts/post_c').update({
     message: 'Post C',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_a',
   });
 
@@ -649,7 +655,7 @@ test('should remove record from Firebase when deleting a record without path', a
   await adapter.deleteRecord({}, { modelName: 'blog-post' }, {
     id: 'post_a',
     message: 'Post A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_a',
     adapterOptions: { include: { 'users/user_a': null } },
   });
@@ -671,7 +677,7 @@ test('should remove record from Firebase when deleting a record with path', asyn
   await adapter.deleteRecord({}, { modelName: 'comment' }, {
     id: 'comment_a',
     message: 'Comment A',
-    timestamp: 12345,
+    timestamp: 1483228800000,
     author: 'user_b',
     adapterOptions: { path: 'comments/post_a' },
   });
@@ -799,7 +805,7 @@ test('should return a single record that matches the path query params', async f
 
   // Act
   const result = await adapter.queryRecord(this.store, this.type, {
-    path: '/userFeeds/user_a/',
+    path: 'userFeeds/user_a/',
   });
 
   // Assert
@@ -985,7 +991,7 @@ test('should return records that matches the path query params', async function(
 
   // Act
   const result = await adapter.query(this.store, this.type, {
-    path: '/userFeeds/user_a',
+    path: 'userFeeds/user_a',
   }, this.recordArray);
 
   // Assert
@@ -1024,9 +1030,9 @@ test('should listen for child_added changes when query params has cacheId and no
     cacheId: 'foo',
   }, this.recordArray);
   await this.ref.update({
-    '/blogPosts/post_c': {
+    'blogPosts/post_c': {
       message: 'Post C',
-      timestamp: 12345,
+      timestamp: 1483228800000,
       author: 'user_a',
     },
   });
@@ -1054,9 +1060,9 @@ test('should not listen for child_added changes when query params has cacheId an
     cacheId: 'foo',
   }, this.recordArray);
   await this.ref.update({
-    '/blogPosts/post_c': {
+    'blogPosts/post_c': {
       message: 'Post C',
-      timestamp: 12345,
+      timestamp: 1483228800000,
       author: 'user_a',
     },
   });
@@ -1078,7 +1084,7 @@ test('should listen for child_removed changes when query params has cacheId and 
   await adapter.query(this.store, this.type, {
     cacheId: 'foo',
   }, this.recordArray);
-  await this.ref.update({ '/blogPosts/post_a': null });
+  await this.ref.update({ 'blogPosts/post_a': null });
 
   // Assert
   assert.deepEqual(this.recordArray.get('content'), [
@@ -1100,7 +1106,7 @@ test('should not listen for child_removed changes when query params has cacheId 
   await adapter.query(this.store, this.type, {
     cacheId: 'foo',
   }, this.recordArray);
-  await this.ref.update({ '/blogPosts/post_a': null });
+  await this.ref.update({ 'blogPosts/post_a': null });
 
   // Assert
   assert.deepEqual(this.recordArray.get('content'), []);

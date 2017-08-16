@@ -4,7 +4,7 @@ import attr from 'ember-data/attr';
 
 export default Model.extend({
   message: attr('string'),
-  timestamp: attr('number'),
+  timestamp: attr('timestamp'),
   author: belongsTo('user'),
-  _innerReferencePath: attr('string'),
+  innerReferencePath: attr('string'),
 });

@@ -20,7 +20,7 @@ test('should update record', function(assert) {
   andThen(() => {
     assert.equal(find(postId).text().trim(), 'post_a');
     assert.equal(find(postMessage).text().trim(), 'Foo');
-    assert.equal(find(postTimestamp).text().trim(), '12345');
+    assert.equal(find(postTimestamp).text().trim(), new Date('2017-01-01'));
     assert.equal(find(postAuthor).text().trim(), 'User B');
   });
 });
