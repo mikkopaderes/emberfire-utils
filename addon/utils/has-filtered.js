@@ -28,10 +28,12 @@ export default function hasFiltered(modelName, rawQuery = {}) {
       }
 
       if (query.hasOwnProperty('path')) {
-        console.warn('DEPRECATION: hasFiltered() path will now use :id ' +
-            'instead of $id');
+        if (query.cacheId.includes('$id')) {
+          console.warn('DEPRECATION: hasFiltered() path will now use :id ' +
+              'instead of $id');
 
-        query.path = query.path.replace('$id', this.get('id'));
+          query.path = query.path.replace('$id', this.get('id'));
+        }
 
         query.path = query.path.replace(':id', this.get('id'));
 

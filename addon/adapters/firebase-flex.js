@@ -1,6 +1,6 @@
 /** @module emberfire-utils */
 import { assign } from 'ember-platform';
-import { bind, next } from 'ember-runloop';
+import { bind } from 'ember-runloop';
 import { camelize } from 'ember-string';
 import { pluralize } from 'ember-inflector';
 import Adapter from 'ember-data/adapter';
@@ -19,6 +19,7 @@ export default Adapter.extend({
 
   /**
    * @type {Ember.Service}
+   * @protected
    * @default
    * @readonly
    */
@@ -26,24 +27,28 @@ export default Adapter.extend({
 
   /**
    * @type {string}
+   * @protected
    * @default
    */
   innerReferencePathName: '_innerReferencePath',
 
   /**
    * @type {Object}
+   * @private
    * @default
    */
-  trackedListeners: {},
+  trackerInfo: null,
 
   /**
    * @type {Object}
+   * @private
    * @default
    */
-  trackedQueries: {},
+  trackedQueries: null,
 
   /**
    * @type {Ember.Service}
+   * @protected
    * @default
    * @readonly
    */
@@ -52,6 +57,18 @@ export default Adapter.extend({
   }),
 
   /**
+   * Adapter hook
+   */
+  init() {
+    this._super(...arguments);
+
+    this.set('trackerInfo', {});
+    this.set('trackedQueries', {});
+  },
+
+  /**
+   * Generates an ID for a record using Firebase push API
+   *
    * @return {string} Push ID
    */
   generateIdForRecord() {
@@ -59,6 +76,8 @@ export default Adapter.extend({
   },
 
   /**
+   * Creates a record
+   *
    * @param {DS.Store} store
    * @param {DS.Model} type
    * @param {DS.Snapshot} snapshot
@@ -69,6 +88,8 @@ export default Adapter.extend({
   },
 
   /**
+   * Updates a record
+   *
    * @param {DS.Store} store
    * @param {DS.Model} type
    * @param {DS.Snapshot} snapshot
@@ -76,6 +97,19 @@ export default Adapter.extend({
    */
   updateRecord(store, type, snapshot) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
+      const modelName = type.modelName;
+      const id = snapshot.id;
+
+      if (this.isTracked(modelName, id)) {
+        const adapterOptions = snapshot.adapterOptions;
+
+        if (!adapterOptions) {
+          snapshot.adapterOptions = {};
+        }
+
+        adapterOptions.path = this.get('trackerInfo')[modelName][id];
+      }
+
       const serializedSnapshot = this.serialize(snapshot, {
         innerReferencePathName: this.get('innerReferencePathName'),
       });
@@ -84,11 +118,10 @@ export default Adapter.extend({
         if (error) {
           reject(new Error(error));
         } else {
-          const path = snapshot.adapterOptions && snapshot.adapterOptions.path ?
-              snapshot.adapterOptions.path : null;
+          const path = this.buildPath(modelName, id, snapshot.adapterOptions);
+          const ref = this.buildFirebaseReference(path);
 
-          this._setupValueListener(store, type.modelName, snapshot.id, path);
-
+          this.listenForRecordChanges(store, modelName, id, ref);
           resolve();
         }
       }));
@@ -96,6 +129,8 @@ export default Adapter.extend({
   },
 
   /**
+   * Finds a record
+   *
    * @param {DS.Store} store
    * @param {DS.Model} type
    * @param {string} id
@@ -104,20 +139,18 @@ export default Adapter.extend({
    */
   findRecord(store, type, id, snapshot = {}) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
-      const path = snapshot.adapterOptions && snapshot.adapterOptions.path ?
-          snapshot.adapterOptions.path : null;
       const modelName = type.modelName;
+      const path = this.buildPath(modelName, id, snapshot.adapterOptions);
+      const ref = this.buildFirebaseReference(path);
       const onValue = bind(this, (snapshot) => {
         if (snapshot.exists()) {
-          this._setupValueListener(store, modelName, id, path);
+          this.listenForRecordChanges(store, modelName, id, ref);
           ref.off('value', onValue);
-          resolve(this._getGetSnapshotWithId(snapshot));
+          resolve(this.mergeSnapshotIdAndValue(snapshot));
         } else {
-          reject(new Error('Record doesn\'t exist'));
+          reject(new Error(`Record ${id} for type ${modelName} not found`));
         }
       });
-
-      let ref = this._getFirebaseReference(modelName, id, path);
 
       ref.on('value', onValue, bind(this, (error) => {
         reject(new Error(error));
@@ -126,6 +159,8 @@ export default Adapter.extend({
   },
 
   /**
+   * Finds all records for a model
+   *
    * @param {DS.Store} store
    * @param {DS.Model} type
    * @return {Promise} Resolves with the fetched records
@@ -133,7 +168,8 @@ export default Adapter.extend({
   findAll(store, type) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
       const modelName = type.modelName;
-      const ref = this._getFirebaseReference(modelName);
+      const path = this.buildPath(modelName);
+      const ref = this.buildFirebaseReference(path);
 
       ref.on('value', bind(this, (snapshot) => {
         const findRecordPromises = [];
@@ -142,17 +178,15 @@ export default Adapter.extend({
           snapshot.forEach((child) => {
             findRecordPromises.push(this.findRecord(store, type, child.key));
           });
-
-          RSVP.all(findRecordPromises).then(bind(this, (records) => {
-            this._setupListListener(store, modelName);
-            ref.off('value');
-            resolve(records);
-          })).catch(bind(this, (error) => {
-            reject(new Error(error));
-          }));
-        } else {
-          reject(new Error('Record doesn\'t exist'));
         }
+
+        RSVP.all(findRecordPromises).then(bind(this, (records) => {
+          this.listenForListChanges(store, modelName, ref);
+          ref.off('value');
+          resolve(records);
+        })).catch(bind(this, (error) => {
+          reject(new Error(error));
+        }));
       }), bind(this, (error) => {
         reject(new Error(error));
       }));
@@ -160,6 +194,8 @@ export default Adapter.extend({
   },
 
   /**
+   * Deletes a record
+   *
    * @param {DS.Store} store
    * @param {DS.Model} type
    * @param {DS.Snapshot} snapshot
@@ -167,20 +203,17 @@ export default Adapter.extend({
    */
   deleteRecord(store, type, snapshot) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
-      const modelName = this._getParsedModelName(type.modelName);
+      const modelName = type.modelName;
       const id = snapshot.id;
+      const path = this.get('trackerInfo')[modelName][id];
       const adapterOptions = snapshot.adapterOptions;
       const fanout = {};
+
+      fanout[`${path}/${id}`] = null;
 
       if (adapterOptions) {
         if (adapterOptions.hasOwnProperty('include')) {
           assign(fanout, adapterOptions.include);
-        }
-
-        if (adapterOptions.hasOwnProperty('path')) {
-          fanout[`${adapterOptions.path}/${id}`] = null;
-        } else {
-          fanout[`${modelName}/${id}`] = null;
         }
       }
 
@@ -195,6 +228,8 @@ export default Adapter.extend({
   },
 
   /**
+   * Queries for a single record
+   *
    * @param {DS.Store} store
    * @param {DS.Model} type
    * @param {Object} [query={}]
@@ -202,18 +237,24 @@ export default Adapter.extend({
    */
   queryRecord(store, type, query = {}) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
-      const path = query.path;
+      const modelName = type.modelName;
+      const path = this.buildPath(modelName, null, query);
+
+      let ref = this.buildFirebaseReference(path);
+
       const onValue = bind(this, (snapshot) => {
         if (snapshot.exists()) {
           // Will always loop once because of the forced limitTo* 1
           snapshot.forEach((child) => {
-            const snapshot = {};
+            const adapterOptions = {};
 
-            if (path && !query.isReference) {
-              snapshot.adapterOptions = { path: path };
+            if (query.path && !query.isReference) {
+              adapterOptions.path = path;
             }
 
-            this.findRecord(store, type, child.key, snapshot).then((record) => {
+            this.findRecord(store, type, child.key, {
+              adapterOptions: adapterOptions,
+            }).then((record) => {
               ref.off('value', onValue);
               resolve(record);
             }).catch((error) => {
@@ -221,13 +262,12 @@ export default Adapter.extend({
             });
           });
         } else {
-          reject(new Error('Record doesn\'t exist'));
+          reject(new Error(
+              `No record matches the query for type ${modelName}`));
         }
       });
 
-      let ref = this._getFirebaseReference(type.modelName, undefined, path);
-
-      ref = this._setupQuerySortingAndFiltering(ref, query, true);
+      ref = this.applyQueriesToFirebaseReference(ref, query, true);
 
       ref.on('value', onValue, bind(this, (error) => {
         reject(new Error(error));
@@ -236,6 +276,8 @@ export default Adapter.extend({
   },
 
   /**
+   * Queries for some records
+   *
    * @param {DS.Store} store
    * @param {DS.Model} type
    * @param {Object} [query={}]
@@ -244,28 +286,32 @@ export default Adapter.extend({
    */
   query(store, type, query = {}, recordArray) {
     return new RSVP.Promise(bind(this, (resolve, reject) => {
-      const path = query.path;
-      const recordPath = path && !query.isReference ? path : null;
       const modelName = type.modelName;
+      const path = this.buildPath(modelName, null, query);
+
+      let ref = this.buildFirebaseReference(path);
+
       const onValue = bind(this, (snapshot) => {
         const findRecordPromises = [];
+        const adapterOptions = {};
+
+        if (query.path && !query.isReference) {
+          adapterOptions.path = path;
+        }
 
         if (snapshot.exists()) {
           snapshot.forEach((child) => {
-            const snapshot = {
-              adapterOptions: { path: recordPath },
-            };
-
-            findRecordPromises.push(this.findRecord(
-                store, type, child.key, snapshot));
+            findRecordPromises.push(this.findRecord(store, type, child.key, {
+              adapterOptions: adapterOptions,
+            }));
           });
         }
 
         RSVP.all(findRecordPromises).then(bind(this, (records) => {
           if (query.hasOwnProperty('cacheId')) {
-            this._setupQueryListListener(
-                store, modelName, recordPath, recordArray, ref);
-            this._trackQuery(query.cacheId, recordArray);
+            this.trackQuery(query.cacheId, recordArray);
+            this.listenForQueryChanges(
+                store, modelName, adapterOptions.path, recordArray, ref);
           }
 
           ref.off('value', onValue);
@@ -275,9 +321,7 @@ export default Adapter.extend({
         }));
       });
 
-      let ref = this._getFirebaseReference(modelName, undefined, path);
-
-      ref = this._setupQuerySortingAndFiltering(ref, query);
+      ref = this.applyQueriesToFirebaseReference(ref, query);
 
       ref.on('value', onValue, bind(this, (error) => {
         reject(new Error(error));
@@ -286,80 +330,122 @@ export default Adapter.extend({
   },
 
   /**
+   * Builds the path for a type
+   *
+   * @param {string} modelName
+   * @param {string} [id]
+   * @param {Object} [adapterOptions]
+   * @return {string} Path
+   * @private
+   */
+  buildPath(modelName, id, adapterOptions) {
+    let path;
+
+    if (adapterOptions && adapterOptions.path) {
+      path = adapterOptions.path;
+    } else {
+      const parsedModelName = this.parseModelName(modelName);
+
+      path = parsedModelName;
+    }
+
+    if (id) {
+      path = `${path}/${id}`;
+    }
+
+    return path;
+  },
+
+  /**
+   * Returns a model name in its camelized and pluralized form
+   *
+   * @param {string} modelName
+   * @return {string} Camelized and pluralized model name
+   * @private
+   */
+  parseModelName(modelName) {
+    return camelize(pluralize(modelName));
+  },
+
+  /**
+   * Builds a Firebase reference for a path
+   *
+   * @param {string} path
+   * @return {firebase.database.Reference} Firebase reference
+   * @private
+   */
+  buildFirebaseReference(path) {
+    return this.get('firebase').child(path);
+  },
+
+  /**
+   * Listens for changes in the record
+   *
    * @param {DS.Store} store
    * @param {string} modelName
    * @param {string} id
-   * @param {string} path
+   * @param {firebase.database.Reference} ref
    * @private
    */
-  _setupValueListener(store, modelName, id, path) {
-    const fastboot = this.get('fastboot');
-
-    if (!fastboot || !fastboot.get('isFastBoot')) {
-      const key = path ?
-          `${path}/${id}` : `${this._getParsedModelName(modelName)}/${id}`;
-
-      if (!this._isListenerTracked(key, 'value')) {
-        this._trackListener(key, 'value');
-
-        const ref = this._getFirebaseReference(modelName, id, path);
+  listenForRecordChanges(store, modelName, id, ref) {
+    if (!this.isInFastBoot()) {
+      if (!this.isTracked(modelName, id)) {
+        this.trackRecord(modelName, id, ref);
 
         ref.on('value', bind(this, (snapshot) => {
           if (snapshot.exists()) {
-            const snapshotWithId = this._getGetSnapshotWithId(snapshot);
+            const snapshotWithId = this.mergeSnapshotIdAndValue(snapshot);
             const normalizedRecord = store.normalize(modelName, snapshotWithId);
 
-            next(() => {
-              store.push(normalizedRecord);
-            });
+            store.push(normalizedRecord);
           } else {
-            this._unloadRecord(store, modelName, id);
+            this.unloadRecord(store, modelName, id);
           }
         }), bind(this, (error) => {
-          this._unloadRecord(store, modelName, id);
+          this.unloadRecord(store, modelName, id);
         }));
       }
     }
   },
 
   /**
+   * Listens for changes in the list returned by `findAll()`
+   *
    * @param {DS.Store} store
    * @param {string} modelName
+   * @param {firebase.database.Reference} ref
    * @private
    */
-  _setupListListener(store, modelName) {
-    const fastboot = this.get('fastboot');
-
-    if (!fastboot || !fastboot.get('isFastBoot')) {
-      const path = `${this._getParsedModelName(modelName)}`;
-
-      if (!this._isListenerTracked(path, 'child_added')) {
-        this._trackListener(path, 'child_added');
-
-        const ref = this._getFirebaseReference(modelName);
+  listenForListChanges(store, modelName, ref) {
+    if (!this.isInFastBoot()) {
+      if (!this.isTracked(modelName, 'findAll')) {
+        this.trackList(modelName);
 
         ref.on('child_added', bind(this, (snapshot) => {
-          this._setupValueListener(store, modelName, snapshot.key);
+          const path = this.buildPath(modelName, snapshot.key);
+          const ref = this.buildFirebaseReference(path);
+
+          this.listenForRecordChanges(store, modelName, snapshot.key, ref);
         }));
       }
     }
   },
 
   /**
+   * Listens for changes in the list returned by `query()`
+   *
    * @param {DS.Store} store
    * @param {string} modelName
-   * @param {string} recordPath
+   * @param {string} path
    * @param {DS.AdapterPopulatedRecordArray} recordArray
-   * @param {firebase.database.DataSnapshot} ref
+   * @param {firebase.database.Reference} ref
    * @private
    */
-  _setupQueryListListener(store, modelName, recordPath, recordArray, ref) {
-    const fastboot = this.get('fastboot');
-
-    if (!fastboot || !fastboot.get('isFastBoot')) {
+  listenForQueryChanges(store, modelName, path, recordArray, ref) {
+    if (!this.isInFastBoot()) {
       const onChildAdded = bind(this, (snapshot) => {
         store.findRecord(modelName, snapshot.key, {
-          adapterOptions: { path: recordPath },
+          adapterOptions: { path: path },
         }).then((record) => {
           // We're using a private API here and will likely break
           // without warning. We need to make sure that our acceptance
@@ -380,52 +466,166 @@ export default Adapter.extend({
 
       ref.on('child_removed', onChildRemoved);
 
-      this._setupRecordExtensions(
+      this.addExtensionToQueryList(
           recordArray, ref, onChildAdded, onChildRemoved);
     }
   },
 
   /**
-   * @param {DS.AdapterPopulatedRecordArray} recordArray
-   * @param {firebase.database.DataSnapshot} ref
-   * @param {function} onChildAdded
-   * @param {function} onChildRemoved
+   * Checks if in FastBoot
+   *
+   * @return {boolean} True if in FastBoot. Otherwise, false.
    * @private
    */
-  _setupRecordExtensions(recordArray, ref, onChildAdded, onChildRemoved) {
-    recordArray.set('firebase', {
-      next(numberOfRecords) {
-        ref.off('child_added', onChildAdded);
-        ref.off('child_removed', onChildRemoved);
+  isInFastBoot() {
+    const fastboot = this.get('fastboot');
 
-        const query = recordArray.get('query');
-
-        if (query.hasOwnProperty('limitToFirst')) {
-          query.limitToFirst += numberOfRecords;
-        }
-
-        if (query.hasOwnProperty('limitToLast')) {
-          query.limitToLast += numberOfRecords;
-        }
-
-        return recordArray.update();
-      },
-
-      off() {
-        ref.off('child_added', onChildAdded);
-        ref.off('child_removed', onChildRemoved);
-      },
-    });
+    return fastboot && fastboot.get('isFastBoot');
   },
 
   /**
-   * @param {firebase.database.DataSnapshot} ref
-   * @param {Object} query
-   * @param {boolean} isForcingLimitToOne
-   * @return {firebase.database.DataSnapshot} Reference with sort/filters
+   * Checks if changes to data is being tracked
+   *
+   * @param {string} modelName
+   * @param {string} id
+   * @return {boolean} True if being tracked. Otherwise, false.
    * @private
    */
-  _setupQuerySortingAndFiltering(ref, query, isForcingLimitToOne) {
+  isTracked(modelName, id) {
+    const trackerInfo = this.get('trackerInfo');
+
+    if (trackerInfo.hasOwnProperty(modelName)) {
+      if (trackerInfo[modelName].hasOwnProperty(id)) {
+        return true;
+      }
+    }
+
+    return false;
+  },
+
+  /**
+   * Tracks a record
+   *
+   * @param {string} modelName
+   * @param {string} id
+   * @param {firebase.database.Reference} ref
+   * @private
+   */
+  trackRecord(modelName, id, ref) {
+    const trackerInfo = this.get('trackerInfo');
+
+    if (!trackerInfo.hasOwnProperty(modelName)) {
+      trackerInfo[modelName] = {};
+    }
+
+    let parsedFirebaseReferencePath = this.parseFirebaseReferencePath(ref);
+
+    parsedFirebaseReferencePath = parsedFirebaseReferencePath.replace(
+        `/${id}`, '');
+
+    trackerInfo[modelName][id] = parsedFirebaseReferencePath;
+  },
+
+  /**
+   * Tracks a find all request
+   *
+   * @param {string} modelName
+   * @private
+   */
+  trackList(modelName) {
+    const trackerInfo = this.get('trackerInfo');
+
+    if (!trackerInfo.hasOwnProperty(modelName)) {
+      trackerInfo[modelName] = {};
+    }
+
+    trackerInfo[modelName]['findAll'] = true;
+  },
+
+  /**
+   * Tracks a query request
+   *
+   * @param {string} cacheId
+   * @param {DS.AdapterPopulatedRecordArray} recordArray
+   * @private
+   */
+  trackQuery(cacheId, recordArray) {
+    if (!this.isInFastBoot()) {
+      const trackedQueries = this.get('trackedQueries');
+      const trackedQueryCache = trackedQueries[cacheId];
+
+      if (trackedQueryCache) {
+        trackedQueryCache.get('firebase').off();
+      }
+
+      const trackedQuery = {};
+
+      trackedQuery[cacheId] = recordArray;
+
+      this.set('trackedQueries', assign({}, trackedQueries, trackedQuery));
+    }
+  },
+
+  /**
+   * Gets the path of a Firebase reference without its origin
+   *
+   * @param {firebase.database.Reference} ref
+   * @return {string} Path
+   * @private
+   */
+  parseFirebaseReferencePath(ref) {
+    return ref.toString().substring(ref.root.toString().length);
+  },
+
+  /**
+   * Merges a snapshot's key with its value in a single object
+   *
+   * @param {firebase.database.DataSnapshot} snapshot
+   * @return {Object} Snapshot
+   * @private
+   */
+  mergeSnapshotIdAndValue(snapshot) {
+    const ref = snapshot.ref;
+    const referencePath = ref.toString().substring(ref.root.toString().length);
+    const pathNodes = referencePath.split('/');
+
+    pathNodes.shift();
+    pathNodes.pop();
+
+    const newSnapshot = snapshot.val();
+
+    newSnapshot.id = snapshot.key;
+    newSnapshot[this.get('innerReferencePathName')] = pathNodes.join('/');
+
+    return newSnapshot;
+  },
+
+  /**
+   * Unloads a record
+   *
+   * @param {DS.Store} store
+   * @param {string} modelName
+   * @param {string} id
+   * @private
+   */
+  unloadRecord(store, modelName, id) {
+    const record = store.peekRecord(modelName, id);
+
+    if (record && !record.get('isSaving')) {
+      store.unloadRecord(record);
+    }
+  },
+
+  /**
+   * Sets up sorting and filtering for queries
+   *
+   * @param {firebase.database.Reference} ref
+   * @param {Object} query
+   * @param {boolean} isForcingLimitToOne
+   * @return {firebase.database.Reference} Reference with sort/filters
+   * @private
+   */
+  applyQueriesToFirebaseReference(ref, query, isForcingLimitToOne) {
     if (!query.hasOwnProperty('orderBy')) {
       query.orderBy = 'id';
     }
@@ -467,117 +667,37 @@ export default Adapter.extend({
   },
 
   /**
-   * @param {firebase.database.DataSnapshot} snapshot
-   * @return {Object} Snapshot with ID
-   * @private
-   */
-  _getGetSnapshotWithId(snapshot) {
-    const ref = snapshot.ref;
-    const referencePath = ref.toString().substring(ref.root.toString().length);
-    const pathNodes = referencePath.split('/');
-
-    pathNodes.shift();
-    pathNodes.pop();
-
-    const newSnapshot = snapshot.val();
-
-    newSnapshot.id = snapshot.key;
-    newSnapshot[this.get('innerReferencePathName')] = pathNodes.join('/');
-
-    return newSnapshot;
-  },
-
-  /**
-   * @param {string} modelName
-   * @param {string} [id='']
-   * @param {string} [path]
-   * @return {firebase.database.DataSnapshot} Firebase reference
-   * @private
-   */
-  _getFirebaseReference(modelName, id = '', path) {
-    const firebase = this.get('firebase');
-
-    if (path) {
-      return firebase.child(`${path}/${id}`);
-    } else {
-      return firebase.child(`${this._getParsedModelName(modelName)}/${id}`);
-    }
-  },
-
-  /**
-   * @param {string} modelName
-   * @return {string} Camelized and pluralized model name
-   */
-  _getParsedModelName(modelName) {
-    return camelize(pluralize(modelName));
-  },
-
-  /**
-   * @param {DS.Store} store
-   * @param {string} modelName
-   * @param {string} id
-   * @private
-   */
-  _unloadRecord(store, modelName, id) {
-    const record = store.peekRecord(modelName, id);
-
-    if (record && !record.get('isSaving')) {
-      store.unloadRecord(record);
-    }
-  },
-
-  /**
-   * @param {string} key trackedListeners key
-   * @param {string} type Type of listener (value, child_added, etc.)
-   * @return {boolean} True if already tracked. Otherwise, false.
-   * @private
-   */
-  _isListenerTracked(key, type) {
-    const trackedListeners = this.get('trackedListeners');
-
-    return trackedListeners.hasOwnProperty(key) && trackedListeners[key][type];
-  },
-
-  /**
-   * @param {string} key trackedListeners key
-   * @param {string} type Type of listener (value, child_added, etc.)
-   * @private
-   */
-  _trackListener(key, type) {
-    const trackedListeners = this.get('trackedListeners');
-    const tempTrackedListeners = assign({}, trackedListeners);
-
-    if (!tempTrackedListeners.hasOwnProperty(key)) {
-      tempTrackedListeners[key] = {};
-    }
-
-    tempTrackedListeners[key][type] = true;
-
-    this.set('trackedListeners', assign(
-        {}, trackedListeners, tempTrackedListeners));
-  },
-
-  /**
-   * @param {string} cacheId
+   * Adds additional APIs to the result of `query()`
+   *
    * @param {DS.AdapterPopulatedRecordArray} recordArray
+   * @param {firebase.database.DataSnapshot} ref
+   * @param {function} onChildAdded
+   * @param {function} onChildRemoved
    * @private
    */
-  _trackQuery(cacheId, recordArray) {
-    const fastboot = this.get('fastboot');
+  addExtensionToQueryList(recordArray, ref, onChildAdded, onChildRemoved) {
+    recordArray.set('firebase', {
+      next(numberOfRecords) {
+        ref.off('child_added', onChildAdded);
+        ref.off('child_removed', onChildRemoved);
 
-    if (!fastboot || !fastboot.get('isFastBoot')) {
-      const trackedQueries = this.get('trackedQueries');
-      const trackedQueryCache = trackedQueries[cacheId];
+        const query = recordArray.get('query');
 
-      if (trackedQueryCache) {
-        trackedQueryCache.get('firebase').off();
-      }
+        if (query.hasOwnProperty('limitToFirst')) {
+          query.limitToFirst += numberOfRecords;
+        }
 
-      const trackedQuery = {};
+        if (query.hasOwnProperty('limitToLast')) {
+          query.limitToLast += numberOfRecords;
+        }
 
-      trackedQuery[cacheId] = recordArray;
+        return recordArray.update();
+      },
 
-      this.set('trackedQueries', assign({}, trackedQueries, trackedQuery));
-    }
+      off() {
+        ref.off('child_added', onChildAdded);
+        ref.off('child_removed', onChildRemoved);
+      },
+    });
   },
 });
