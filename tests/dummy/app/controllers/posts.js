@@ -130,15 +130,17 @@ export default Controller.extend({
         },
       },
       comments: {
-        comment_a: {
-          message: 'Comment A',
-          timestamp: new Date().getTime(),
-          author: 'user_b',
-        },
-        comment_b: {
-          message: 'Comment B',
-          timestamp: new Date().getTime(),
-          author: 'user_b',
+        post_a: {
+          comment_a: {
+            message: 'Comment A',
+            timestamp: new Date().getTime(),
+            author: 'user_b',
+          },
+          comment_b: {
+            message: 'Comment B',
+            timestamp: new Date().getTime(),
+            author: 'user_b',
+          },
         },
       },
       userFeeds: {
@@ -150,7 +152,6 @@ export default Controller.extend({
       userPosts: {
         user_a: {
           post_a: true,
-          post_b: true,
         },
       },
       users: {
@@ -159,6 +160,9 @@ export default Controller.extend({
         },
         user_b: {
           name: 'User B',
+        },
+        user_c: {
+          name: 'User C',
         },
       },
     };
