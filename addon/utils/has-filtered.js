@@ -28,7 +28,7 @@ export default function hasFiltered(modelName, rawQuery = {}) {
       }
 
       if (query.hasOwnProperty('path')) {
-        if (query.cacheId.includes('$id')) {
+        if (query.path.includes('$id')) {
           console.warn('DEPRECATION: hasFiltered() path will now use :id ' +
               'instead of $id');
 
