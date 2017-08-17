@@ -101,13 +101,11 @@ export default Adapter.extend({
       const id = snapshot.id;
 
       if (this.isTracked(modelName, id)) {
-        const adapterOptions = snapshot.adapterOptions;
-
-        if (!adapterOptions) {
+        if (!snapshot.adapterOptions) {
           snapshot.adapterOptions = {};
         }
 
-        adapterOptions.path = this.get('trackerInfo')[modelName][id];
+        snapshot.adapterOptions.path = this.get('trackerInfo')[modelName][id];
       }
 
       const serializedSnapshot = this.serialize(snapshot, {
