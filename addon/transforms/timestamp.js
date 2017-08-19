@@ -1,5 +1,5 @@
 /** @module emberfire-utils */
-import Transform from 'ember-data/transform';
+import Transform from 'ember-data/transforms/date';
 
 import firebase from 'firebase';
 
@@ -9,14 +9,6 @@ import firebase from 'firebase';
  * @extends DS.Transform
  */
 export default Transform.extend({
-  /**
-   * @param {number} serialized
-   * @return {date} Deserialized object
-   */
-  deserialize(serialized) {
-    return new Date(serialized);
-  },
-
   /**
    * @return {Object} Firebase server timestamp
    */
