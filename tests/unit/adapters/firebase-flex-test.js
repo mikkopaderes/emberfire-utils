@@ -62,16 +62,18 @@ moduleFor('adapter:firebase-flex', 'Unit | Adapter | firebase flex | createRecor
 });
 
 test('should update Firebase', async function(assert) {
-  assert.expect(1);
+  assert.expect(2);
 
   // Arrange
   const serializedSnapshot = {
-    'blogPosts/post_c/message': 'Message',
-    'blogPosts/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
+    'foo/bar/dee/post_c/message': 'Message',
+    'foo/bar/dee/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
     'userFeeds/user_a/post_c': true,
     'userFeeds/user_b/post_c': true,
   };
-  const spy = sinon.spy(this.ref, 'update');
+  const updateSpy = sinon.spy(this.ref, 'update');
+  const record = EmberObject.create();
+  const setSpy = sinon.spy(record, 'set');
   const adapter = this.subject({
     firebase: this.ref,
     serialize: sinon.stub().returns(serializedSnapshot),
@@ -83,17 +85,20 @@ test('should update Firebase', async function(assert) {
     message: 'Message',
     timestamp: firebase.database.ServerValue.TIMESTAMP,
     adapterOptions: {
+      path: 'foo/bar/dee',
       include: {
         'userFeeds/user_a/post_c': true,
         'userFeeds/user_b/post_c': true,
       },
     },
+    record: record,
   });
 
   // Assert
-  assert.ok(spy.calledWith({
-    'blogPosts/post_c/message': 'Message',
-    'blogPosts/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
+  assert.ok(setSpy.calledWithExactly('_innerReferencePath', 'bar/dee'));
+  assert.ok(updateSpy.calledWith({
+    'foo/bar/dee/post_c/message': 'Message',
+    'foo/bar/dee/post_c/timestamp': firebase.database.ServerValue.TIMESTAMP,
     'userFeeds/user_a/post_c': true,
     'userFeeds/user_b/post_c': true,
   }));
@@ -118,6 +123,7 @@ test('should track changes to record when not in FastBoot', async function(asser
     id: 'post_c',
     message: 'Message',
     timestamp: firebase.database.ServerValue.TIMESTAMP,
+    record: EmberObject.create(),
   });
   await this.ref.child('blogPosts/post_c').update({ 'message': 'Foo' });
 
@@ -147,6 +153,7 @@ test('should not track changes to record when in FastBoot', async function(asser
     id: 'post_c',
     message: 'Message',
     timestamp: firebase.database.ServerValue.TIMESTAMP,
+    record: EmberObject.create(),
   });
   await this.ref.child('blogPosts/post_c').update({ 'message': 'Foo' });
 
@@ -184,6 +191,7 @@ test('should unload record when it gets deleted from the backend', async functio
     id: 'post_c',
     message: 'Message',
     timestamp: firebase.database.ServerValue.TIMESTAMP,
+    record: EmberObject.create(),
   });
   await this.ref.child('blogPosts/post_c').remove();
 
@@ -234,6 +242,7 @@ test('should update Firebase when updating a record', async function(assert) {
         'userFeeds/user_b/post_a': true,
       },
     },
+    record: EmberObject.create(),
   });
 
   // Assert
