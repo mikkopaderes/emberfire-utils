@@ -108,6 +108,12 @@ export default Adapter.extend({
         snapshot.adapterOptions.path = this.get('trackerInfo')[modelName][id];
       }
 
+      const path = this.buildPath(modelName, id, snapshot.adapterOptions);
+      const innerReferencePath = this.parseInnerReferencePath(path);
+
+      snapshot.record.set(
+          this.get('innerReferencePathName'), innerReferencePath);
+
       const serializedSnapshot = this.serialize(snapshot, {
         innerReferencePathName: this.get('innerReferencePathName'),
       });
@@ -576,6 +582,26 @@ export default Adapter.extend({
   },
 
   /**
+   * Gets the inner path of a string
+   *
+   * e.g.
+   *
+   * `comments/post_a/comment_a` = `post_a`
+   *
+   * @param {string} path
+   * @return {string} Path
+   * @private
+   */
+  parseInnerReferencePath(path) {
+    const pathNodes = path.split('/');
+
+    pathNodes.shift();
+    pathNodes.pop();
+
+    return pathNodes.join('/');
+  },
+
+  /**
    * Merges a snapshot's key with its value in a single object
    *
    * @param {firebase.database.DataSnapshot} snapshot
@@ -583,17 +609,12 @@ export default Adapter.extend({
    * @private
    */
   mergeSnapshotIdAndValue(snapshot) {
-    const ref = snapshot.ref;
-    const referencePath = ref.toString().substring(ref.root.toString().length);
-    const pathNodes = referencePath.split('/');
-
-    pathNodes.shift();
-    pathNodes.pop();
-
+    const path = this.parseFirebaseReferencePath(snapshot.ref);
+    const innerReferencePath = this.parseInnerReferencePath(path);
     const newSnapshot = snapshot.val();
 
     newSnapshot.id = snapshot.key;
-    newSnapshot[this.get('innerReferencePathName')] = pathNodes.join('/');
+    newSnapshot[this.get('innerReferencePathName')] = innerReferencePath;
 
     return newSnapshot;
   },
