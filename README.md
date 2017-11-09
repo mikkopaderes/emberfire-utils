@@ -1,3 +1,12 @@
+# DEPRECATED
+
+See the following repos as a replacement
+
+- [`ember-firebase-adapter`](https://github.com/rmmmp/ember-firebase-adapter) for Flexible Adapter and Serializer part
+- [`ember-firebaseui`](https://github.com/rmmmp/ember-firebaseui) for FirebaseUI Component
+- [`ember-computed-query`](https://github.com/rmmmp/ember-computed-query) for `hasFiltered` relationship
+- No replacement for `firebase-util` service. Before, it was useful because of some power features but they've since been split over to the adapter side. What's left now of the service are merely just sugar syntax over firebase.
+
 # EmberFire Utilities
 
 This addon provides some useful utilities on top of [EmberFire](https://github.com/firebase/emberfire).
